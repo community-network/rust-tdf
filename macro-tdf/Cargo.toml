@@ -10,7 +10,7 @@ edition = "2018"
 proc-macro2 = "1"
 syn = { version = "1.0.73", features=["parsing", "proc-macro", "derive", "extra-traits", "printing"] }
 quote = "1.0"
-
+itertools = "*"
 
 [lib]
 proc-macro = true

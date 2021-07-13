@@ -37,6 +37,7 @@ dependencies = [
 name = "macro-tdf"
 version = "0.1.0"
 dependencies = [
+ "itertools",
  "proc-macro2",
  "quote",
  "syn",
@@ -93,11 +94,10 @@ dependencies = [
 
 [[package]]
 name = "tdf"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "byteorder",
- "itertools",
  "macro-tdf",
  "num-derive",
  "num-traits",

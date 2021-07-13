@@ -77,6 +77,22 @@ impl RTDFSerializer {
         Ok((label_string, expected_type))
     }
 
+    pub fn ser_field_optional<T: Serialize>(&mut self, match_label: TDFToken) -> Result<Option<T>> {
+        let label = self.stream.next()?;
+
+        // Move cursor back
+        self.stream.1 -= 1;
+
+        if label != match_label {
+            return Ok(None)
+        }
+
+        let (_, value) = self.ser_field::<T>()?;
+
+        Ok(Some(value))
+
+    }
+
     /// Get map start token
     pub fn map_start(&mut self) -> Result<()> {
         self.check_token(TDFToken::MapStart)?;

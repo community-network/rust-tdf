@@ -62,11 +62,17 @@ mod tests {
     use std::io::Cursor;
     use std::fmt::Debug;
 
+    
+    #[derive(Pack, Debug, PartialEq)]
+    struct TestOptional {
+        a: Option<i32>,
+    }
+
     #[derive(Pack, Debug, PartialEq)]
     struct TestNumbers {
         a: i64,
-        b: i32,
         c: u64,
+        b: i32,
         d: u32,
     }
 

@@ -13,7 +13,7 @@ use anyhow::{Result, bail};
 use num_derive::FromPrimitive;
 
 #[derive(Debug, Clone)]
-pub struct TDFTokenStream(pub Vec<TDFToken>, usize);
+pub struct TDFTokenStream(pub Vec<TDFToken>, pub usize);
 
 impl TDFTokenStream {
     pub fn new() -> Self {
