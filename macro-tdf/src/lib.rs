@@ -57,7 +57,7 @@ pub fn parse_macro(input: TokenStream) -> TokenStream {
 
     };
 
-    fields = fields.into_iter().sorted_by(|a, b| Ord::cmp(&ind_to_string(&a), &ind_to_string(&b))).collect();
+    //fields = fields.into_iter().sorted_by(|a, b| Ord::cmp(&ind_to_string(&a), &ind_to_string(&b))).collect();
 
     struct_map(struct_type, fields)
 
