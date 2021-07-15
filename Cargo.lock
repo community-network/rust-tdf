@@ -53,7 +53,6 @@ name = "macro-tdf"
 version = "0.1.0"
 dependencies = [
  "itertools",
- "log",
  "proc-macro2",
  "quote",
  "syn",
@@ -114,6 +113,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "byteorder",
+ "log",
  "macro-tdf",
  "num-derive",
  "num-traits",

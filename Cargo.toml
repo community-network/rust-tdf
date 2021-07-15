@@ -12,4 +12,4 @@ byteorder="*"
 num-derive = "*"
 num-traits = "*"
 macro-tdf = { path = "macro-tdf" }
-
+log = "*"

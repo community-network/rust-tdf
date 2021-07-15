@@ -3,7 +3,6 @@ use quote::{quote};
 use proc_macro2::{Ident, Span};
 use syn::{Field};
 use quote::ToTokens;
-use log;
 
 fn comp_ident(path: &syn::Path, name: &str) -> bool {
     path.is_ident(&Ident::new(name, Span::call_site()))
@@ -132,14 +131,15 @@ fn serialize_named_field(field: &Field, f: &Ident, serialize_body: &mut Vec<proc
         format!("{}", f)
     );
 
-    log::trace!("Field {}: {}", name_string, token_type);
-
+    
     let ser_body_field = if is_optional {
         quote! {
+            log::trace!("Field {}", #name_string);
             let #f = ser.ser_field_optional::< #token_type >( TDFToken::Label( #name_string.into() ) )?;
         }
     } else {
         quote! {
+            log::trace!("Field {}", #name_string);
             let (_, #f ) = ser.ser_field::< #token_type >()?;
         }
     };
