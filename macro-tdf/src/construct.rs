@@ -135,7 +135,7 @@ fn serialize_named_field(field: &Field, f: &Ident, serialize_body: &mut Vec<proc
     let ser_body_field = if is_optional {
         quote! {
             log::trace!("Field {}", #name_string);
-            let #f = ser.ser_field_optional::< #token_type >( TDFToken::Label( #name_string.into() ) )?;
+            let #f = ser.ser_field_optional::< #token_type >( TDFToken::Label( #name_string.to_uppercase() ) )?;
         }
     } else {
         quote! {
