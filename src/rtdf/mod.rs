@@ -10,20 +10,20 @@ pub use des::*;
 
 
 /// TDF Object type
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ObjectType(pub i64, pub i64);
 
 /// TDF Object id
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ObjectId(pub i64, pub i64, pub i64);
 
 /// TDF Integer list
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct IntList(pub Vec<i64>);
 
 
 /// Network Union
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Union {
     /// Client address specific for Xbox
     XboxClientAddr {
@@ -52,12 +52,12 @@ pub enum Union {
 }
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Localization(pub String);
 
 
 /// Network IP address
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct IpAddress {
     pub port: i64,
     pub ip: i64,
