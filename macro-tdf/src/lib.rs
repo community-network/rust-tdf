@@ -1,11 +1,17 @@
 use proc_macro::{TokenStream};
-use syn::{DeriveInput, Data, Fields, parse_macro_input, Ident};
+use syn::{DeriveInput, Data, Fields, parse_macro_input, Ident, Field};
 use quote::{quote};
+use proc_macro2::{Span};
 
 mod construct;
 use construct::*;
 
 use itertools::Itertools;
+
+fn comp_ident(path: &syn::Path, name: &str) -> bool {
+    path.is_ident(&Ident::new(name, Span::call_site()))
+}
+
 
 #[proc_macro_derive(Pack, attributes(rename))]
 pub fn parse_macro(input: TokenStream) -> TokenStream {
@@ -51,16 +57,34 @@ pub fn parse_macro(input: TokenStream) -> TokenStream {
 
     };
 
-    fields = fields.into_iter().sorted_by(|a, b| Ord::cmp(&ind_to_string(&a.ident), &ind_to_string(&b.ident))).collect();
+    fields = fields.into_iter().sorted_by(|a, b| Ord::cmp(&ind_to_string(&a), &ind_to_string(&b))).collect();
 
     struct_map(struct_type, fields)
 
 }
 
 
-fn ind_to_string(optional_ident: &Option<Ident>) -> String {
-    match optional_ident{
+fn ind_to_string(field: &Field) -> String {
+
+
+    let mut name_string = match &field.ident {
         Some(i) => i.to_string(),
         None => String::new()
+    };
+
+    // Rename attribute
+    // Like #[rename("Label")]
+    for attr in &field.attrs {
+
+        if comp_ident(&attr.path, "rename") {
+
+            let new_name: syn::LitStr = attr.parse_args().unwrap();
+            name_string = new_name.value();
+
+        }
+
     }
+
+    name_string
+
 }
