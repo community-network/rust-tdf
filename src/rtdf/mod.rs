@@ -59,7 +59,7 @@ pub struct Localization(pub String);
 /// Network IP address
 #[derive(Debug, PartialEq, Clone)]
 pub struct IpAddress {
-    pub ip: i64,
     pub maci: i64,
     pub port: i64,
+    pub ip: i64,
 }
