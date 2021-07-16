@@ -449,9 +449,11 @@ impl Serialize for IpAddress {
     fn serialize(ser: &mut RTDFSerializer) -> Result<Self> {
 
         ser.map_start()?;
-        let (_, port) = ser.ser_field::<i64>()?;
-        let (_, ip)   = ser.ser_field::<i64>()?;
-        let (_, maci) = ser.ser_field::<i64>()?;
+        
+        let (_, ip)   = ser.ser_field::<u64>()?;
+        let (_, maci) = ser.ser_field::<u64>()?;
+        let (_, port) = ser.ser_field::<u64>()?;
+
         ser.map_end()?;
 
         Ok(

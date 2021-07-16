@@ -281,9 +281,10 @@ impl Deserialize for IpAddress {
 
         des.stream.push(TDFToken::MapStart);
 
-        des.des_field("PORT", &mut self.port)?;
+        
         des.des_field("IP", &mut self.ip)?;
         des.des_field("MACI", &mut self.maci)?;
+        des.des_field("PORT", &mut self.port)?;
 
         des.stream.push(TDFToken::MapEnd);
 
