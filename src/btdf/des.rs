@@ -23,7 +23,9 @@ impl BTDFDeserializer {
 
     pub fn des_token(&mut self, reader: &mut dyn Read, tdf_type: TDFToken, is_root: bool) -> Result<()> {
 
-        match tdf_type {
+        log::trace!("Token: {:?}", tdf_type);
+
+        let result = match tdf_type {
             TDFToken::IntType        => self.des_int(reader),
             TDFToken::StringType     => self.des_string(reader),
             TDFToken::BlobType       => self.des_blob(reader),
@@ -36,7 +38,9 @@ impl BTDFDeserializer {
             TDFToken::ObjectIdType   => self.des_object_id(reader),
             TDFToken::FloatType      => self.des_float(reader),
             _ => bail!("Expected token, found {:?}!", tdf_type)
-        }
+        };
+
+        result
 
     }
 
