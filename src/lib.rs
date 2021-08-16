@@ -2,6 +2,7 @@
 pub mod token;
 pub mod btdf;
 pub mod rtdf;
+//pub mod auto;
 
 extern crate macro_tdf;
 
@@ -24,16 +25,15 @@ pub mod prelude {
 }
 
 
-use btdf::peekreader::{PeekRead};
 use btdf::{BTDFDeserializer, BTDFSerializer};
 use rtdf::{Deserialize, RTDFSerializer, Serialize, StructConstructor, RTDFDeserializer};
 use token::{TDFSerializer, TDFDeserializer};
 use anyhow::Result;
-use std::io::Write;
-
+use std::io::{Write, Read, Seek};
+//use auto::HelpSerializer;
 
 /// Performs TDF binary to rust strcut conversion
-pub fn bin_to_struct<T: Serialize, R: PeekRead + Sized>(reader: &mut R) -> Result<T>  {
+pub fn bin_to_struct<T: Serialize, R: Read + Seek+ Sized>(reader: &mut R) -> Result<T>  {
     // Conver bin into token stream
     let stream = BTDFDeserializer::deserialize(reader)?;
     // Init Struct builder
@@ -51,12 +51,24 @@ pub fn struct_to_bin<D: Deserialize, W: Write>(structure: &mut D, writer: &mut W
     Ok(())
 }
 
+// /// Auto generates Rust pseudo code for given binary stream
+// pub fn auto_gen_from_bin<R: Read + Seek+ Sized>(reader: &mut R) -> Result<String>  {
+//     // Conver bin into token stream
+//     let stream = BTDFDeserializer::deserialize(reader)?;
+
+//     let mut sc = String::new();
+
+//     HelpSerializer::serialize(stream, &mut sc)?;
+
+//     Ok(sc)
+// } 
+
 
 
 #[cfg(test)]
 mod tests {
 
-    use crate::btdf::peekreader::PeekReader;
+    use peekread::{SeekPeekReader};
     use crate::prelude::*;
     use crate::{struct_to_bin, bin_to_struct};
     use std::io::Cursor;
@@ -104,7 +116,7 @@ mod tests {
         let mut rw_cursor = Cursor::new(test_vector);
         struct_to_bin(&mut input, &mut rw_cursor)?;
         rw_cursor.set_position(0);
-        let tested_struct = bin_to_struct::<T, PeekReader<Cursor<Vec<u8>>>>(&mut PeekReader::new(rw_cursor))?;
+        let tested_struct = bin_to_struct::<T, SeekPeekReader<Cursor<Vec<u8>>>>(&mut SeekPeekReader::new(rw_cursor))?;
         assert_eq!(tested_struct, input);
         Ok(())
     }

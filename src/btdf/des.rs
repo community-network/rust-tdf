@@ -1,6 +1,7 @@
 
 use crate::token::*;
-use crate::btdf::peekreader::{PeekRead as Read};
+use peekread::{PeekRead, SeekPeekReader};
+use std::io::{Read, Seek};
 use anyhow::{Result, bail};
 use byteorder::{BigEndian, ReadBytesExt};
 
@@ -21,7 +22,7 @@ impl BTDFDeserializer {
         }
     }
 
-    pub fn des_token(&mut self, reader: &mut dyn Read, tdf_type: TDFToken, is_root: bool) -> Result<()> {
+    pub fn des_token(&mut self, reader: &mut impl PeekRead, tdf_type: TDFToken, is_root: bool) -> Result<()> {
 
         log::trace!("Token: {:?}", tdf_type);
 
@@ -44,7 +45,7 @@ impl BTDFDeserializer {
 
     }
 
-    pub fn des_label(&mut self, reader: &mut dyn Read) -> Result<()> {
+    pub fn des_label(&mut self, reader: &mut impl PeekRead) -> Result<()> {
 
         let mut label_tag_bytes = [0; 3];
         reader.read(&mut label_tag_bytes)?;
@@ -89,13 +90,15 @@ impl BTDFDeserializer {
         Ok(())
     }
     
-    pub fn des_map(&mut self, reader: &mut dyn Read, _is_root: bool) -> Result<()> {
+    pub fn des_map(&mut self, reader: &mut impl PeekRead, _is_root: bool) -> Result<()> {
 
         self.stream.push(TDFToken::MapStart);
 
         loop {
-            match reader.peek_cursor().read_u8() {   
 
+            let terminator_result = reader.peek().read_u8();
+
+            match terminator_result {   
                 Ok(terminator) => {
                     if terminator == 0_u8 {
                         reader.read_u8()?;
@@ -111,7 +114,7 @@ impl BTDFDeserializer {
                     return Ok(());
                 }
             }
-            
+
             self.des_label(reader)?;
             
             let type_tag = reader.read_u8()?;
@@ -124,12 +127,12 @@ impl BTDFDeserializer {
 
     }
 
-    pub fn des_int(&mut self, reader: &mut dyn Read) -> Result<()> {
+    pub fn des_int(&mut self, reader: &mut impl PeekRead) -> Result<()> {
         self.stream.push(TDFToken::Int(self.read_number(reader)?));
         Ok(())
     }
 
-    pub fn read_number(&self, reader: &mut dyn Read) -> Result<i64> {
+    pub fn read_number(&self, reader: &mut impl PeekRead) -> Result<i64> {
         let mut b = reader.read_u8()?;
 
         let mut n = (b & 0x3F) as i64;
@@ -159,7 +162,7 @@ impl BTDFDeserializer {
         Ok(n)
     }
 
-    pub fn des_string(&mut self, reader: &mut dyn Read) -> Result<()> {
+    pub fn des_string(&mut self, reader: &mut impl PeekRead) -> Result<()> {
 
         let size = self.read_number(reader)?;
 
@@ -174,7 +177,7 @@ impl BTDFDeserializer {
         Ok(())
     }
 
-    pub fn des_blob(&mut self, reader: &mut dyn Read) -> Result<()> {
+    pub fn des_blob(&mut self, reader: &mut impl PeekRead) -> Result<()> {
 
         let size = self.read_number(reader)?;
 
@@ -187,7 +190,7 @@ impl BTDFDeserializer {
 
     }
 
-    pub fn des_list(&mut self, reader: &mut dyn Read) -> Result<()> {
+    pub fn des_list(&mut self, reader: &mut impl PeekRead) -> Result<()> {
 
         let type_tag = reader.read_u8()?;
         let tdf_type = TDFToken::from_tag(type_tag)?;
@@ -206,7 +209,7 @@ impl BTDFDeserializer {
         Ok(())
     }
 
-    pub fn des_pair_list(&mut self, reader: &mut dyn Read) -> Result<()> {
+    pub fn des_pair_list(&mut self, reader: &mut impl PeekRead) -> Result<()> {
 
         let key_tag = reader.read_u8()?;
         let tdf_key = TDFToken::from_tag(key_tag)?;
@@ -230,7 +233,7 @@ impl BTDFDeserializer {
         Ok(())
     }
 
-    pub fn des_int_list(&mut self, reader: &mut dyn Read) -> Result<()> {
+    pub fn des_int_list(&mut self, reader: &mut impl PeekRead) -> Result<()> {
 
         let size = self.read_number(reader)? as usize;
 
@@ -245,7 +248,7 @@ impl BTDFDeserializer {
         Ok(())
     }
 
-    pub fn des_union(&mut self, reader: &mut dyn Read) -> Result<()> {
+    pub fn des_union(&mut self, reader: &mut impl PeekRead) -> Result<()> {
 
         let union_type = FromPrimitive::from_u8(
             reader.read_u8()?
@@ -271,32 +274,38 @@ impl BTDFDeserializer {
         Ok(())
     }
 
-    pub fn des_object_type(&mut self, reader: &mut dyn Read) -> Result<()> {
+    pub fn des_object_type(&mut self, reader: &mut impl PeekRead) -> Result<()> {
         for _ in 0..2 {
             self.des_int(reader)?;
         }
         Ok(())
     }
 
-    pub fn des_object_id(&mut self, reader: &mut dyn Read) -> Result<()> {
+    pub fn des_object_id(&mut self, reader: &mut impl PeekRead) -> Result<()> {
         for _ in 0..3 {
             self.des_int(reader)?;
         }
         Ok(())
     }
 
-    pub fn des_float(&mut self, reader: &mut dyn Read) -> Result<()> {
+    pub fn des_float(&mut self, reader: &mut impl PeekRead) -> Result<()> {
         let float = reader.read_f32::<BigEndian>()?;
         self.stream.push(TDFToken::Float(float));
         Ok(())
     }
 }
 
-impl<R: Read> TDFDeserializer<R> for BTDFDeserializer {
+impl<R: Read + Seek> TDFDeserializer<R> for BTDFDeserializer {
     fn deserialize(reader: &mut R) -> Result<TDFTokenStream> {
+
+        // Make seek reader
+        let mut reader = SeekPeekReader::new(reader);
+
         let mut des = Self::new();
+
+        // Des self as map
         des.stream.push(TDFToken::MapType);
-        des.des_map(reader, true)?;
+        des.des_map(&mut reader, true)?;
         
         Ok(des.stream)
     }

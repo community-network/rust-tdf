@@ -79,6 +79,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "peekread"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "978122cdc72f39ed3c6343907453570570699169aace43dd09d46b52cc5f681d"
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -109,7 +115,7 @@ dependencies = [
 
 [[package]]
 name = "tdf"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "byteorder",
@@ -117,6 +123,7 @@ dependencies = [
  "macro-tdf",
  "num-derive",
  "num-traits",
+ "peekread",
 ]
 
 [[package]]

@@ -88,7 +88,7 @@ impl Deserialize for i32 {
         Ok(())
     }
 }
-
+    
 impl Deserialize for u32 {
     const TYPE: TDFToken = TDFToken::IntType;
     fn deserialize(&mut self, des: &mut RTDFDeserializer) -> Result<()> {

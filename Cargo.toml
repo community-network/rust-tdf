@@ -1,6 +1,6 @@
 [package]
 name = "tdf"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Artyom Polyanskiy"]
 edition = "2018"
 
@@ -13,3 +13,4 @@ num-derive = "*"
 num-traits = "*"
 macro-tdf = { path = "macro-tdf" }
 log = "*"
+peekread = "*"

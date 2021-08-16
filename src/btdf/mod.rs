@@ -9,5 +9,3 @@ pub use ser::*;
 
 mod des;
 pub use des::*;
-
-pub mod peekreader;
