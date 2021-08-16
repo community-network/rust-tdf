@@ -166,7 +166,15 @@ impl BTDFDeserializer {
 
         let size = self.read_number(reader)?;
 
-        log::trace!("String size: {:?}", (size - 1) as usize);
+        /*
+            In some situation len might me 0
+            In that case (0-1) as usize will give usize::MAX
+            Which will result in buffer overflow
+        */
+        if size == 0 {
+            self.stream.push(TDFToken::String(vec![]));
+            return Ok(());
+        }
 
         let mut res = vec![0; (size - 1) as usize];
         reader.read(&mut res)?;
