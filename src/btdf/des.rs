@@ -166,6 +166,8 @@ impl BTDFDeserializer {
 
         let size = self.read_number(reader)?;
 
+        log::trace!("String size: {:?}", (size - 1) as usize);
+
         let mut res = vec![0; (size - 1) as usize];
         reader.read(&mut res)?;
 
