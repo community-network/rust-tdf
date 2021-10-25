@@ -97,6 +97,14 @@ impl Deserialize for u32 {
     }
 }
 
+impl Deserialize for bool {
+    const TYPE: TDFToken = TDFToken::IntType;
+    fn deserialize(&mut self, des: &mut RTDFDeserializer) -> Result<()> {
+        des.stream.push(TDFToken::Int(if *self { 1 } else { 0 }));
+        Ok(())
+    }
+}
+
 impl Deserialize for String {
     const TYPE: TDFToken = TDFToken::StringType;
     fn deserialize(&mut self, des: &mut RTDFDeserializer) -> Result<()> {

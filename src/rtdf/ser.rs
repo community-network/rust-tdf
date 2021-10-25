@@ -152,6 +152,13 @@ impl Serialize for u32 {
     }
 }
 
+impl Serialize for bool {
+    fn serialize(ser: &mut RTDFSerializer) -> Result<Self> {
+        let num = i64::serialize(ser)?;
+        Ok(num == 0)
+    }
+}
+
 impl<T: Serialize> Serialize for Vec<T> {
     fn serialize(ser: &mut RTDFSerializer) -> Result<Self> {
 
