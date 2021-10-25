@@ -3,6 +3,7 @@ use crate::token::*;
 use crate::rtdf::{ObjectId, ObjectType, IntList, Union, IpAddress, Localization};
 
 use anyhow::{Result, bail};
+use std::collections::HashMap;
 use std::fmt;
 
 #[derive(Debug)]
@@ -184,6 +185,79 @@ impl<T: Serialize> Serialize for Vec<T> {
         let end_token = ser.stream.next()?;
         if end_token != TDFToken::ListEnd {
             bail!("Expected ListEnd, found type {:?}", end_token);
+        }
+
+        Ok(out)
+
+    }
+}
+
+impl<T: Serialize + Default + Copy, const N: usize> Serialize for [T; N] {
+    fn serialize(ser: &mut RTDFSerializer) -> Result<Self> {
+
+        let value = ser.stream.next()?;
+        let size = match value {
+            TDFToken::ListStart(s) => s,
+            _ => bail!("Expected List, found {:?}", value),
+        };
+
+        if size != N {
+            bail!("Expected Array of fixed length {}, but got length {:?}", N, value);
+        }
+
+        let value_type = ser.stream.next()?;
+
+        let default_allocation = T::default();
+        let mut out: [T; N] = [default_allocation; N];
+
+        for i in 0..size {
+            let expected_type = match T::serialize(ser) {
+                Ok(t) => t,
+                Err(e) => bail!("Error serializing list item ({:?}): {}", value_type, e),
+            };
+            out[i] = expected_type;
+        }
+
+        let end_token = ser.stream.next()?;
+        if end_token != TDFToken::ListEnd {
+            bail!("Expected ListEnd, found type {:?}", end_token);
+        }
+
+        Ok(out)
+
+    }
+}
+
+impl<T1: Serialize + core::hash::Hash + Eq, T2: Serialize> Serialize for HashMap<T1, T2> {
+    fn serialize(ser: &mut RTDFSerializer) -> Result<Self> {
+
+        let value = ser.stream.next()?;
+        let size = match value {
+            TDFToken::PairListStart(s) => s,
+            _ => bail!("Expected Pair List, found {:?}", value),
+        };
+
+        let key_type = ser.stream.next()?;
+        let value_type = ser.stream.next()?;
+
+
+        let mut out = HashMap::with_capacity(size);
+
+        for _ in 0..size {
+            let expected_key = match T1::serialize(ser) {
+                Ok(t) => t,
+                Err(e) => bail!("Error Pair list key ({:?}): {}", key_type, e),
+            };
+            let expected_value = match T2::serialize(ser) {
+                Ok(t) => t,
+                Err(e) => bail!("Error Pair list value ({:?}): {}", value_type, e),
+            };
+            out.insert(expected_key, expected_value);
+        }
+
+        let end_token = ser.stream.next()?;
+        if end_token != TDFToken::PairListEnd {
+            bail!("Expected PairListEnd, found type {:?}", end_token);
         }
 
         Ok(out)

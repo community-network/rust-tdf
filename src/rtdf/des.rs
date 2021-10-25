@@ -3,6 +3,7 @@ use crate::token::*;
 use crate::rtdf::{ObjectId, ObjectType, IntList, Union, IpAddress, Localization};
 
 use anyhow::{Result, bail};
+use std::collections::HashMap;
 use std::fmt;
 use std::convert::TryInto;
 
@@ -132,6 +133,25 @@ impl<D: Deserialize> Deserialize for Vec<D> {
     }
 }
 
+impl<D: Deserialize, const N: usize> Deserialize for [D; N] {
+    const TYPE: TDFToken = TDFToken::ListType;
+    fn deserialize(&mut self, des: &mut RTDFDeserializer) -> Result<()> {
+
+        des.stream.push(TDFToken::ListStart(N));
+
+        des.des_type::<D>()?;
+
+        for item in self {
+            item.deserialize(des)?;
+        }
+
+        des.stream.push(TDFToken::ListEnd);
+
+        Ok(())
+
+    }
+}
+
 impl Deserialize for IntList {
     const TYPE: TDFToken = TDFToken::IntListType;
     fn deserialize(&mut self, des: &mut RTDFDeserializer) -> Result<()> {
@@ -179,6 +199,31 @@ impl Deserialize for ObjectType {
     }
 }
 
+impl<K: Deserialize + Copy, V: Deserialize> Deserialize for HashMap<K, V> {
+
+    const TYPE: TDFToken = TDFToken::PairListType;
+
+    fn deserialize(&mut self, des: &mut RTDFDeserializer) -> Result<()> {
+
+        des.stream.push(TDFToken::PairListStart(self.len()));
+
+        des.des_type::<K>()?;
+        des.des_type::<V>()?;
+
+        for (k, v) in self {
+
+            let mut key = k.clone();
+            key.deserialize(des)?;
+            v.deserialize(des)?;
+
+        }
+
+        des.stream.push(TDFToken::PairListEnd);
+
+        Ok(())
+
+    }
+}
 
 impl<K: Deserialize, V: Deserialize> Deserialize for Vec<(K, V)> {
 

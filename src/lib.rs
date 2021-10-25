@@ -63,16 +63,16 @@ pub fn struct_to_bin<D: Deserialize, W: Write>(structure: &mut D, writer: &mut W
 //     Ok(sc)
 // } 
 
-
-
 #[cfg(test)]
 mod tests {
 
     use peekread::{SeekPeekReader};
     use crate::prelude::*;
     use crate::{struct_to_bin, bin_to_struct};
+    use std::collections::HashMap;
     use std::io::Cursor;
     use std::fmt::Debug;
+
 
     
     #[derive(Pack, Debug, PartialEq)]
@@ -110,6 +110,16 @@ mod tests {
         c: Union,
     }
 
+    // #[derive(Pack, Debug, PartialEq)]
+    // enum TestEnum {
+    //     Alpha,
+    //     Beta = 0x34
+    // }
+
+    // #[derive(Pack, Debug, PartialEq)]
+    // struct TestUnumsInStruct {
+    //     a: TestEnum,
+    //}
 
     pub fn test_bi_direct<T: Deserialize + Serialize + PartialEq + Debug>(mut input: T) -> Result<()> {
         let test_vector: Vec<u8> = vec![];
@@ -183,4 +193,30 @@ mod tests {
         test_bi_direct(TestUnions::new()).unwrap();
     }
 
+    #[test]
+    fn hash_map_test() {
+
+        #[derive(Pack, Debug, PartialEq)]
+        struct Test {
+            map: HashMap<u32, String>,
+        }
+
+        let mut test_case = HashMap::new();
+
+        test_case.insert(1, "seven".to_string());
+        test_case.insert(2, "five".to_string());
+
+        test_bi_direct(Test { map: test_case }).unwrap();
+    }
+
+    #[test]
+    fn array_test() {
+
+        #[derive(Pack, Debug, PartialEq)]
+        struct Test {
+            array: [u32; 3],
+        }
+
+        test_bi_direct(Test { array: [3, 3, 5] }).unwrap();
+    }
 }
