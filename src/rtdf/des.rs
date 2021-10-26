@@ -199,7 +199,7 @@ impl Deserialize for ObjectType {
     }
 }
 
-impl<K: Deserialize + Copy, V: Deserialize> Deserialize for HashMap<K, V> {
+impl<K: Deserialize + Clone, V: Deserialize> Deserialize for HashMap<K, V> {
 
     const TYPE: TDFToken = TDFToken::PairListType;
 
