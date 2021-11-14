@@ -8,6 +8,8 @@ use byteorder::{BigEndian, ReadBytesExt};
 // use itertools::Itertools;
 use num_traits::FromPrimitive;
 
+pub const VARSIZE_NEGATIVE: u8 = 0x40;
+pub const VARSIZE_MORE: u8 = 0x80;
 
 pub struct BTDFDeserializer {
     pub stream: TDFTokenStream,
@@ -133,33 +135,33 @@ impl BTDFDeserializer {
     }
 
     pub fn read_number(&self, reader: &mut impl PeekRead) -> Result<i64> {
+
         let mut b = reader.read_u8()?;
 
-        let mut n = (b & 0x3F) as i64;
-        let marker = (b & 0x40) == 64;
+        let is_negative = (b & VARSIZE_NEGATIVE) != 0;
+        let mut value =  (b as u64) & (VARSIZE_NEGATIVE - 1) as u64;
 
         let mut shift = 6;
+        let mut more = (b & VARSIZE_MORE) != 0;
 
-        while b >= 128 {
+        while more {
             b = reader.read_u8()?;
-            n |= ((b & 0x7f) as i64) << shift;
+            value |= ((b as u64) & ((VARSIZE_MORE - 1) as u64)) << shift;
+            more = (b & VARSIZE_MORE) != 0;
             shift += 7;
         }
 
-        if marker {
-            /*
-                All other libraries are missing sign
-                Took some time, but I assume it is
-                
-                2's Complimentary
-            */
-            
-            n = !n + 1;
+        let mut value = value as i64;
 
-            return Ok(n);  
+        if is_negative {
+            if value != 0 {
+                value = -value;
+            } else {
+                value = i64::MIN;
+            }
         }
 
-        Ok(n)
+        Ok(value)
     }
 
     pub fn des_string(&mut self, reader: &mut impl PeekRead) -> Result<()> {

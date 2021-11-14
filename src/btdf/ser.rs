@@ -4,6 +4,8 @@ use std::io::{Write};
 use anyhow::{Result, bail};
 use byteorder::{BigEndian, WriteBytesExt};
 
+use super::des::{VARSIZE_NEGATIVE, VARSIZE_MORE};
+
 pub struct BTDFSerializer {
     stream: TDFTokenStream,
 }
@@ -243,25 +245,34 @@ impl BTDFSerializer {
 
     pub fn write_number(&self, writer: &mut dyn Write, mut number: i64) -> Result<()> {
 
-        let mut marker = 0;
-
-        if number < 0 {
-            number = !(number - 1);
-            marker = 0x40;
+        if number == 0 {
+            writer.write_u8(0)?;
+            return Ok(());
         }
 
-        Ok(if number < 64 {
-            writer.write_u8(number as u8 | marker)?
+        let mut extra = vec![];
+
+        if number < 0 {
+            number = -number;
+            extra.push(number as u8 | (VARSIZE_MORE | VARSIZE_NEGATIVE));
         } else {
-            let mut n = number;
-            writer.write_u8((n & 0x3F) as u8 | marker | 0x80)?;
-            n >>= 6;
-            while n >= 128 {
-                writer.write_u8((n & 0x7f) as u8 | 0x80)?;
-                n >>= 7;
-            }
-            writer.write_u8(n as u8)?
-        })
+            extra.push((number as u8 & (VARSIZE_NEGATIVE - 1)) | VARSIZE_MORE);
+        }
+
+        number >>= 6;
+
+        while number > 0 {
+            extra.push(number as u8 | VARSIZE_MORE);
+            number >>= 7;
+        }
+
+        let last = extra.last_mut().unwrap();
+        *last &= !VARSIZE_MORE;
+        
+        writer.write(&extra)?;
+
+        Ok(())
+
     }
 
     pub fn write_string(&self, writer: &mut dyn Write, string: Vec<u8>) -> Result<()> {
