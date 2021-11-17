@@ -6,11 +6,11 @@ use proc_macro2::{Span};
 mod construct;
 use construct::*;
 
-use itertools::Itertools;
+// use itertools::Itertools;
 
-fn comp_ident(path: &syn::Path, name: &str) -> bool {
-    path.is_ident(&Ident::new(name, Span::call_site()))
-}
+// fn comp_ident(path: &syn::Path, name: &str) -> bool {
+//     path.is_ident(&Ident::new(name, Span::call_site()))
+// }
 
 
 #[proc_macro_derive(Pack, attributes(rename))]
@@ -31,7 +31,8 @@ pub fn parse_macro(input: TokenStream) -> TokenStream {
 
         // Bail on unsupported format
 
-        Data::Enum(_) => {
+        Data::Enum(data_enum) => {
+            println!("{:?}", data_enum);
             panic!("Cannot derive for rust enum")
         },
         
@@ -43,7 +44,7 @@ pub fn parse_macro(input: TokenStream) -> TokenStream {
 
     let data_struct_fields = &mut data_struct.fields;
 
-    let mut fields = match data_struct_fields {
+    let fields = match data_struct_fields {
 
         Fields::Unnamed(_) => {
             panic!("Only named struct is supported!")
@@ -63,28 +64,45 @@ pub fn parse_macro(input: TokenStream) -> TokenStream {
 
 }
 
+// fn parse_struct(data_struct_fields: &mut Fields) -> TokenStream {
+//     let fields = match data_struct_fields {
 
-fn ind_to_string(field: &Field) -> String {
+//         Fields::Unnamed(_) => {
+//             panic!("Only named struct is supported!")
+//         }
+
+//         Fields::Named(fields) => {
+//             let fields = fields.named.iter_mut().collect();
+//             return struct_map(struct_type, fields);
+//         }
+
+//         Fields::Unit => vec![]
+
+//     }
+// }
 
 
-    let mut name_string = match &field.ident {
-        Some(i) => i.to_string(),
-        None => String::new()
-    };
+// fn ind_to_string(field: &Field) -> String {
 
-    // Rename attribute
-    // Like #[rename("Label")]
-    for attr in &field.attrs {
 
-        if comp_ident(&attr.path, "rename") {
+//     let mut name_string = match &field.ident {
+//         Some(i) => i.to_string(),
+//         None => String::new()
+//     };
 
-            let new_name: syn::LitStr = attr.parse_args().unwrap();
-            name_string = new_name.value();
+//     // Rename attribute
+//     // Like #[rename("Label")]
+//     for attr in &field.attrs {
 
-        }
+//         if comp_ident(&attr.path, "rename") {
 
-    }
+//             let new_name: syn::LitStr = attr.parse_args().unwrap();
+//             name_string = new_name.value();
 
-    name_string
+//         }
 
-}
+//     }
+
+//     name_string
+
+// }

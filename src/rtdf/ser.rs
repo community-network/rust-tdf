@@ -1,6 +1,6 @@
 
 use crate::token::*;
-use crate::rtdf::{ObjectId, ObjectType, IntList, Union, IpAddress, Localization};
+use crate::rtdf::{IntList, Localization, ObjectId, ObjectType, UNION_INVALID, TDFUnion, des::Deserialize};
 
 use anyhow::{Result, bail};
 use std::collections::HashMap;
@@ -432,120 +432,144 @@ impl Serialize for Vec<u8> {
     }
 }
 
-impl Serialize for Union {
+impl<T: Deserialize + Serialize> Serialize for TDFUnion<T> {
     fn serialize(ser: &mut RTDFSerializer) -> Result<Self> {
+
         let value = ser.stream.next()?;
+
         let union_type = match value {
             TDFToken::UnionStart(t) => t,
             _ => bail!("Expected Union, found {:?}", value),
         };
-        Ok(
-            match union_type {
-                UnionType::Unset => {
-                    ser.check_token(TDFToken::UnionEnd)?;
-                    Union::Unset
-                },
-                UnionType::XboxClientAddr => {
 
-                    let label = ser.stream.next()?;
-                    match label {
-                        TDFToken::Label(_) => {},
-                        _ => {
-                            bail!("Unable to serialize union, expected Label, found {:?}", label);
-                        }
-                    }
+        let value = if union_type != UNION_INVALID {
 
-                    ser.check_token(TDFToken::MapType)?;
-                    ser.map_start()?;
-
-                    let (_, dctx) = ser.ser_field::<i64>()?;
-
-                    ser.map_end()?;
-                    ser.check_token(TDFToken::UnionEnd)?;
-
-                    Union::XboxClientAddr {
-                        dctx
-                    }
-                },
-                UnionType::IpPairAddr => {
-
-                    let label = ser.stream.next()?;
-                    match label {
-                        TDFToken::Label(_) => {},
-                        _ => {
-                            bail!("Unable to serialize union, expected Label, found {:?}", label);
-                        }
-                    }
-
-                    ser.check_token(TDFToken::MapType)?;
-                    ser.map_start()?;
-
-                    let (_, internal) = ser.ser_field::<IpAddress>()?;
-                    let (_, external) = ser.ser_field::<IpAddress>()?;
-                    let (_, mac_addr) = ser.ser_field::<i64>()?;
-
-                    ser.map_end()?;
-                    ser.check_token(TDFToken::UnionEnd)?;
-
-                    Union::IpPairAddr {
-                        internal,
-                        external,
-                        mac_addr,
-                    }
-                },
-
-                UnionType::IpAddr => {
-
-                    let label = ser.stream.next()?;
-                    match label {
-                        TDFToken::Label(_) => {},
-                        _ => {
-                            bail!("Unable to serialize union, expected Label, found {:?}", label);
-                        }
-                    }
-
-                    ser.check_token(TDFToken::MapType)?;
-                    ser.map_start()?;
-
-                    let (_, addr) = ser.ser_field::<IpAddress>()?;
-
-                    ser.map_end()?;
-                    ser.check_token(TDFToken::UnionEnd)?;
-
-                    Union::IpAddr {
-                        addr,
-                    }
-                },
-
-                _ => {
-                    bail!("This union type {:?} not supported yet!", union_type)
+            let label = match ser.stream.next()? {
+                TDFToken::Label(s) => s,
+                t => {
+                    bail!("Unable to serialize union, expected Label, found {:?}", t);
                 }
-            }
-        )
+            };
+
+            Some((label, T::serialize(ser)?))
+        } else {
+            None
+        };
+
+        ser.check_token(TDFToken::UnionEnd)?;
+
+        Ok(Self {
+            id: union_type,
+            value
+        })
+
+        // Ok(
+        //     match union_type {
+        //         UnionType::Unset => {
+                    
+        //             Union::Unset
+        //         },
+        //         UnionType::XboxClientAddr => {
+
+        //             let label = ser.stream.next()?;
+        //             match label {
+        //                 TDFToken::Label(_) => {},
+        //                 _ => {
+        //                     bail!("Unable to serialize union, expected Label, found {:?}", label);
+        //                 }
+        //             }
+
+        //             ser.check_token(TDFToken::MapType)?;
+        //             ser.map_start()?;
+
+        //             let (_, dctx) = ser.ser_field::<i64>()?;
+
+        //             ser.map_end()?;
+        //             ser.check_token(TDFToken::UnionEnd)?;
+
+        //             Union::XboxClientAddr {
+        //                 dctx
+        //             }
+        //         },
+        //         UnionType::IpPairAddr => {
+
+        //             let label = ser.stream.next()?;
+        //             match label {
+        //                 TDFToken::Label(_) => {},
+        //                 _ => {
+        //                     bail!("Unable to serialize union, expected Label, found {:?}", label);
+        //                 }
+        //             }
+
+        //             ser.check_token(TDFToken::MapType)?;
+        //             ser.map_start()?;
+
+        //             let (_, internal) = ser.ser_field::<IpAddress>()?;
+        //             let (_, external) = ser.ser_field::<IpAddress>()?;
+        //             let (_, mac_addr) = ser.ser_field::<i64>()?;
+
+        //             ser.map_end()?;
+        //             ser.check_token(TDFToken::UnionEnd)?;
+
+        //             Union::IpPairAddr {
+        //                 internal,
+        //                 external,
+        //                 mac_addr,
+        //             }
+        //         },
+
+        //         UnionType::IpAddr => {
+
+        //             let label = ser.stream.next()?;
+        //             match label {
+        //                 TDFToken::Label(_) => {},
+        //                 _ => {
+        //                     bail!("Unable to serialize union, expected Label, found {:?}", label);
+        //                 }
+        //             }
+
+        //             ser.check_token(TDFToken::MapType)?;
+        //             ser.map_start()?;
+
+        //             let (_, addr) = ser.ser_field::<IpAddress>()?;
+
+        //             ser.map_end()?;
+        //             ser.check_token(TDFToken::UnionEnd)?;
+
+        //             Union::IpAddr {
+        //                 addr,
+        //             }
+        //         },
+
+        //         _ => {
+        //             bail!("This union type {:?} not supported yet!", union_type)
+        //         }
+        //     }
+        // )
 
     }
 }
 
-impl Serialize for IpAddress {
-    fn serialize(ser: &mut RTDFSerializer) -> Result<Self> {
+// impl Serialize for IpAddress {
+//     fn serialize(ser: &mut RTDFSerializer) -> Result<Self> {
 
-        ser.map_start()?;
+//         ser.map_start()?;
         
-        let (_, ip)   = ser.ser_field::<u64>()?;
-        let (_, maci) = ser.ser_field::<u64>()?;
-        let (_, port) = ser.ser_field::<u64>()?;
+//         let (_, ip)   = ser.ser_field::<u64>()?;
+//         let (_, maci) = ser.ser_field::<u64>()?;
+//         let (_, port) = ser.ser_field::<u64>()?;
 
-        ser.map_end()?;
+//         ser.map_end()?;
 
-        Ok(
-            Self {
-                port,
-                ip,
-                maci
-            }
-        )
-    }
-}
+//         Ok(
+//             Self {
+//                 port,
+//                 ip,
+//                 maci
+//             }
+//         )
+//     }
+// }
 
 impl Serialize for Localization {
     fn serialize(ser: &mut RTDFSerializer) -> Result<Self> {

@@ -75,7 +75,7 @@ pub enum TDFToken {
     /// Indicates Union type
     UnionType,
     /// Some Typed Union start
-    UnionStart(UnionType),
+    UnionStart(u32),
     /// End of the Union
     UnionEnd,
     /// Indicates Int List type
@@ -138,6 +138,8 @@ impl TDFToken {
             Self::ObjectTypeType => 8,
             Self::ObjectIdType   => 9,
             Self::FloatType      => 10,
+            //Self::TimeValue      => 11,
+            //Self::Generic        => 12,
             _ => bail!("Attempt to get tag of non-type token!")
         })
     }

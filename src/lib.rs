@@ -14,7 +14,7 @@ pub mod prelude {
     pub use macro_tdf::*;
 
     // Ser/des rust tdf
-    pub use crate::rtdf::{RTDFDeserializer, RTDFSerializer, Deserialize, Serialize, StructConstructor, ObjectType, ObjectId, IntList, Union, Localization, IpAddress};
+    pub use crate::rtdf::{RTDFDeserializer, RTDFSerializer, Deserialize, Serialize, StructConstructor, ObjectType, ObjectId, IntList, TDFUnion, Localization};
 
     // Ser/des defenitions
     pub use crate::token::{TDFSerializer, TDFDeserializer, TDFTokenStream, TDFToken};

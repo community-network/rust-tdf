@@ -1,11 +1,13 @@
 
 use crate::token::*;
-use crate::rtdf::{ObjectId, ObjectType, IntList, Union, IpAddress, Localization};
+use crate::rtdf::{ObjectId, ObjectType, IntList, TDFUnion, Localization};
 
 use anyhow::{Result, bail};
 use std::collections::HashMap;
 use std::fmt;
 use std::convert::TryInto;
+
+use super::{AsUnion, Serialize, UNION_INVALID};
 
 pub struct RTDFDeserializer {
     pub stream: TDFTokenStream,
@@ -287,64 +289,54 @@ impl Deserialize for Vec<u8> {
     }
 }
 
+// impl<T: AsUnion, D: From<Option<T>>> Deserialize for D {
+//     const TYPE: TDFToken = TDFToken::UnionType;
 
-impl Deserialize for Union {
+//     fn deserialize(&mut self, des: &mut RTDFDeserializer) -> Result<()> {
+//         let u: TDFUnion<T> = self.into();
+//         u.des(des)
+//     }
+// }
+
+impl<T: Deserialize + Serialize> Deserialize for TDFUnion<T> {
 
     const TYPE: TDFToken = TDFToken::UnionType;
 
     fn deserialize(&mut self, des: &mut RTDFDeserializer) -> Result<()> {
+        
+        des.stream.push(TDFToken::UnionStart(self.id));
 
-        match self {
-            Self::XboxClientAddr { dctx } => {
-                des.stream.push(TDFToken::UnionStart(UnionType::XboxClientAddr));
-                des.stream.push(TDFToken::Label("DLSC".into()));
-                des.stream.push(TDFToken::MapType);
-                des.stream.push(TDFToken::MapStart);
-                des.des_field("dctx", dctx)?;
-                des.stream.push(TDFToken::MapEnd);
-                des.stream.push(TDFToken::UnionEnd);
-            },
-            Self::IpPairAddr { internal, external, mac_addr } => {
-                des.stream.push(TDFToken::UnionStart(UnionType::IpPairAddr));
-                des.stream.push(TDFToken::Label("VALU".into()));
-                des.stream.push(TDFToken::MapType);
-                des.stream.push(TDFToken::MapStart);
-                des.des_field("INIP", internal)?;
-                des.des_field("EXIP", external)?;
-                des.des_field("MACI", mac_addr)?;
-                des.stream.push(TDFToken::MapEnd);
-                des.stream.push(TDFToken::UnionEnd);
-            },
-            Self::Unset => {
-                des.stream.push(TDFToken::UnionStart(UnionType::Unset));
-                des.stream.push(TDFToken::UnionEnd);
-            },
-            _ => bail!("Union Unsupported yet!"),
+        if self.id != UNION_INVALID && self.value.is_some() {
+            let (key, value) = self.value.as_mut().unwrap();
+            des.stream.push(TDFToken::Label(key.clone()));
+            value.deserialize(des)?;
         }
 
+        des.stream.push(TDFToken::UnionEnd);
+
         Ok(())
     }
 }
 
-impl Deserialize for IpAddress {
+// impl Deserialize for IpAddress {
 
-    const TYPE: TDFToken = TDFToken::MapType;
+//     const TYPE: TDFToken = TDFToken::MapType;
 
-    fn deserialize(&mut self, des: &mut RTDFDeserializer) -> Result<()> {
+//     fn deserialize(&mut self, des: &mut RTDFDeserializer) -> Result<()> {
 
-        des.stream.push(TDFToken::MapStart);
+//         des.stream.push(TDFToken::MapStart);
 
         
-        des.des_field("IP", &mut self.ip)?;
-        des.des_field("MACI", &mut self.maci)?;
-        des.des_field("PORT", &mut self.port)?;
+//         des.des_field("IP", &mut self.ip)?;
+//         des.des_field("MACI", &mut self.maci)?;
+//         des.des_field("PORT", &mut self.port)?;
 
-        des.stream.push(TDFToken::MapEnd);
+//         des.stream.push(TDFToken::MapEnd);
 
-        Ok(())
-    }
+//         Ok(())
+//     }
 
-}
+// }
 
 impl Deserialize for Localization {
 

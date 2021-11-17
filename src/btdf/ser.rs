@@ -1,5 +1,5 @@
 
-use crate::token::*;
+use crate::{rtdf::UNION_INVALID, token::*};
 use std::io::{Write};
 use anyhow::{Result, bail};
 use byteorder::{BigEndian, WriteBytesExt};
@@ -158,7 +158,7 @@ impl BTDFSerializer {
 
         writer.write_u8(union_type as u8)?;
 
-        if union_type == UnionType::Unset {
+        if union_type == UNION_INVALID {
 
             let end_token = self.stream.next()?;
             if end_token != TDFToken::UnionEnd {

@@ -1,5 +1,5 @@
 
-use crate::token::*;
+use crate::{rtdf::UNION_INVALID, token::*};
 use peekread::{PeekRead, SeekPeekReader};
 use std::io::{Read, Seek};
 use anyhow::{Result, bail};
@@ -262,13 +262,11 @@ impl BTDFDeserializer {
 
     pub fn des_union(&mut self, reader: &mut impl PeekRead) -> Result<()> {
 
-        let union_type = FromPrimitive::from_u8(
-            reader.read_u8()?
-        ).unwrap_or(UnionType::Unset);
+        let union_type = reader.read_u8()? as u32;
 
-        self.stream.push(TDFToken::UnionStart(union_type.clone()));
+        self.stream.push(TDFToken::UnionStart(union_type));
 
-        if union_type != UnionType::Unset {
+        if union_type != UNION_INVALID {
 
             self.des_label(reader)?;
             
