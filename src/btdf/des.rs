@@ -34,7 +34,7 @@ impl BTDFDeserializer {
             TDFToken::BlobType       => self.des_blob(reader),
             TDFToken::MapType        => self.des_map(reader, is_root),
             TDFToken::ListType       => self.des_list(reader),
-            TDFToken::PairListType   => self.des_pair_list(reader),
+            TDFToken::PairListType   => self.des_pair_list(reader, false),
             TDFToken::UnionType      => self.des_union(reader),
             TDFToken::IntListType    => self.des_int_list(reader),
             TDFToken::ObjectTypeType => self.des_object_type(reader),
@@ -48,12 +48,44 @@ impl BTDFDeserializer {
 
     }
 
-    pub fn des_label(&mut self, reader: &mut impl PeekRead) -> Result<()> {
+    fn des_bugged_token(&mut self, reader: &mut impl PeekRead, tdf_type: TDFToken, is_root: bool) -> Result<()> {
+        log::trace!("Bugged Token: {:?}", tdf_type);
+
+        let result = match tdf_type {
+            TDFToken::IntType        => self.des_int(reader),
+            TDFToken::StringType     => self.des_string(reader),
+            TDFToken::BlobType       => self.des_blob(reader),
+            TDFToken::MapType        => self.des_map(reader, is_root),
+            TDFToken::ListType       => self.des_list(reader),
+            TDFToken::PairListType   => self.des_pair_list(reader, true),
+            TDFToken::UnionType      => self.des_union(reader),
+            TDFToken::IntListType    => self.des_int_list(reader),
+            TDFToken::ObjectTypeType => self.des_object_type(reader),
+            TDFToken::ObjectIdType   => self.des_object_id(reader),
+            TDFToken::FloatType      => self.des_float(reader),
+            TDFToken::GenericType    => self.des_generic(reader),
+            _ => bail!("Expected token, found {:?}!", tdf_type)
+        };
+
+        result
+    }
+
+    pub fn des_label(&mut self, reader: &mut impl PeekRead) -> Result<bool> {
+
+        // Apparently EA tdf has a bug
+        // Where if u use pairlist of pairlist it encodes second pairlist type as a map
+        // Idk what to do with it, so added this check for later replacement
+        // In one specific field that I have this problem
+        let mut has_heat1_bug = false;
 
         let mut label_tag_bytes = [0; 3];
         reader.read(&mut label_tag_bytes)?;
 
         let tag_bytes = Vec::from(label_tag_bytes);
+
+        if vec![0x9E, 0x2C, 0xA1] == tag_bytes {
+            has_heat1_bug = true;
+        }
 
         let mut label_bytes = String::new(); 
 
@@ -88,9 +120,11 @@ impl BTDFDeserializer {
             tag_bytes[2] & 0x1F
         ));
 
+        
+
         self.stream.push(TDFToken::Label(label_bytes));
 
-        Ok(())
+        Ok(has_heat1_bug)
     }
     
     pub fn des_map(&mut self, reader: &mut impl PeekRead, _is_root: bool) -> Result<()> {
@@ -118,14 +152,18 @@ impl BTDFDeserializer {
                 }
             }
 
-            self.des_label(reader)?;
+            let has_bug = self.des_label(reader)?;
             
             let type_tag = reader.read_u8()?;
             let tdf_type = TDFToken::from_tag(type_tag)?;
 
             self.stream.push(tdf_type.clone());
 
-            self.des_token(reader, tdf_type, false)?;
+            if has_bug {
+                self.des_bugged_token(reader, tdf_type, false)?;
+            } else {
+                self.des_token(reader, tdf_type, false)?;
+            }
         }
 
     }
@@ -241,15 +279,21 @@ impl BTDFDeserializer {
         Ok(())
     }
 
-    pub fn des_pair_list(&mut self, reader: &mut impl PeekRead) -> Result<()> {
+    pub fn des_pair_list(&mut self, reader: &mut impl PeekRead, has_bug: bool) -> Result<()> {
 
         let key_tag = reader.read_u8()?;
         let tdf_key = TDFToken::from_tag(key_tag)?;
 
         let value_tag = reader.read_u8()?;
-        let tdf_value = TDFToken::from_tag(value_tag)?;
+        let mut tdf_value = TDFToken::from_tag(value_tag)?;
+
+        if has_bug {
+            tdf_value = TDFToken::PairListType;
+        }
 
         let size = self.read_number(reader)? as usize;
+
+        log::trace!("Pairlist size: {}", size);
 
         self.stream.push(TDFToken::PairListStart(size));
         self.stream.push(tdf_key.clone());

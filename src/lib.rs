@@ -230,11 +230,23 @@ mod tests {
             map: Generic<u32>,
         }
 
-        let mut test_case = HashMap::new();
-
-        test_case.insert(1, "seven".to_string());
-        test_case.insert(2, "five".to_string());
-
         test_bi_direct(Test { map: Generic(Some(("MAP ".into(), 67, 34))) }).unwrap();
+    }
+
+    #[test]
+    fn ea_bug_fix_test() {
+
+        // use simple_logger::SimpleLogger;
+        // SimpleLogger::new().init().unwrap();
+    
+        // // Use Info, Debug, Trace to see more
+        // log::set_max_level(log::LevelFilter::Trace);
+
+        #[derive(Pack, Debug, PartialEq)]
+        struct Test {
+            gbra: Vec<(u32, Vec<(u32, String)>)>,
+        }
+
+        test_bi_direct(Test { gbra: vec![(1, vec![(2, "test".into())])] }).unwrap();
     }
 }
