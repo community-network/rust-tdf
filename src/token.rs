@@ -92,6 +92,12 @@ pub enum TDFToken {
     FloatType,
     /// Float number
     Float(f32),
+    /// Indicates Generic type
+    GenericType,
+    /// Indicates if Generic exists
+    GenericStart(bool),
+    /// End of Generic
+    GenericEnd,
 }
 
 /// Type of Union token
@@ -138,6 +144,8 @@ impl TDFToken {
             Self::ObjectTypeType => 8,
             Self::ObjectIdType   => 9,
             Self::FloatType      => 10,
+            // time here also
+            Self::GenericType    => 12,
             _ => bail!("Attempt to get tag of non-type token!")
         })
     }
@@ -156,6 +164,7 @@ impl TDFToken {
             8 => Self::ObjectTypeType,
             9 => Self::ObjectIdType,
             10 => Self::FloatType,
+            12 => Self::GenericType,
             _ => bail!("Tag {} doesn't match any known type!", tag)
         })
     }

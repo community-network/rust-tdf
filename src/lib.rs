@@ -68,6 +68,7 @@ mod tests {
 
     use peekread::{SeekPeekReader};
     use crate::prelude::*;
+    use crate::rtdf::Generic;
     use crate::{struct_to_bin, bin_to_struct};
     use std::collections::HashMap;
     use std::io::Cursor;
@@ -145,7 +146,7 @@ mod tests {
     impl TestBasic {
         fn new() -> Self {
             Self {
-                a: "frostbite-test-string".into(),
+                a: "crossplayGames".into(),
                 b: vec![0, 45, 255, 6, 0],
                 c: vec![7894, 45, -6543, 56],
                 d: IntList(vec![675, 5, 6, -1]),
@@ -218,5 +219,22 @@ mod tests {
         }
 
         test_bi_direct(Test { array: [3, 3, 5] }).unwrap();
+    }
+
+    
+    #[test]
+    fn generic_test() {
+
+        #[derive(Pack, Debug, PartialEq)]
+        struct Test {
+            map: Generic<u32>,
+        }
+
+        let mut test_case = HashMap::new();
+
+        test_case.insert(1, "seven".to_string());
+        test_case.insert(2, "five".to_string());
+
+        test_bi_direct(Test { map: Generic(Some(("MAP ".into(), 34))) }).unwrap();
     }
 }

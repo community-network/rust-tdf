@@ -64,3 +64,6 @@ pub struct IpAddress {
     pub maci: u64,
     pub port: u64,
 }
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Generic<T: Deserialize + Serialize>(pub Option<(String, T)>);

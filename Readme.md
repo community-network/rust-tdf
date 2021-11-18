@@ -31,6 +31,11 @@ The TDF Data transmitted in packet body:
 | 8_u8      | ObjectType | 
 | 9_u8      | ObjectId   | 
 | A_u8      | Float      | 
+| B_u8      | Time*      | 
+| C_u8      | Generic    | 
+
+
+\* Not implemented
 
 
 ##### Uint primitive type
@@ -95,6 +100,17 @@ None has id of 127, the data in this case is not sent (so no bytes are read).
     - Label (3 bytes)
     - Type byte
     - Data of type
+* Termination byte
+
+##### Generic
+Looks like a Union, but covers general data types.
+* Valid: bool as 1 or 0 byte
+* ID: Compressed int
+* Nothing or labeled data in this struct:
+    - Label (3 bytes)
+    - Type byte
+    - Data of type
+* Termination byte
 
 ##### IntList - list of compressed integers
 Shorter on 1 byte than normal list.

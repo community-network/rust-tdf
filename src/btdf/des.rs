@@ -40,6 +40,7 @@ impl BTDFDeserializer {
             TDFToken::ObjectTypeType => self.des_object_type(reader),
             TDFToken::ObjectIdType   => self.des_object_id(reader),
             TDFToken::FloatType      => self.des_float(reader),
+            TDFToken::GenericType    => self.des_generic(reader),
             _ => bail!("Expected token, found {:?}!", tdf_type)
         };
 
@@ -178,6 +179,20 @@ impl BTDFDeserializer {
             return Ok(());
         }
 
+        /*
+            It appears that in new versions -1 is allowed
+            That means String can be as long as it is possible
+            Read till we hit terminator than
+        */
+        if size < 0 {
+            let mut res = vec![];
+            let mut b = reader.read_u8()?;
+            while b != 0 {
+                res.push(b);
+                b = reader.read_u8()?;
+            }
+        }
+
         let mut res = vec![0; (size - 1) as usize];
         reader.read(&mut res)?;
 
@@ -282,6 +297,34 @@ impl BTDFDeserializer {
         }
         
         self.stream.push(TDFToken::UnionEnd);
+
+        Ok(())
+    }
+
+    pub fn des_generic(&mut self, reader: &mut impl PeekRead) -> Result<()> {
+
+        let generic_exists = reader.read_u8()? != 0;
+
+        self.stream.push(TDFToken::GenericStart(generic_exists));
+
+        if generic_exists {
+
+            self.des_label(reader)?;
+            
+            let type_tag = reader.read_u8()?;
+            let tdf_type = TDFToken::from_tag(type_tag)?;
+
+            self.stream.push(tdf_type.clone());
+
+            self.des_token(reader, tdf_type, false)?;
+            let null = reader.read_u8()?;
+
+            if null != 0 {
+                log::trace!("Generic terminator is not null!!1 Found [{}].", {null});
+            }
+        }
+        
+        self.stream.push(TDFToken::GenericEnd);
 
         Ok(())
     }

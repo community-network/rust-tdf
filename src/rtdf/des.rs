@@ -7,6 +7,8 @@ use std::collections::HashMap;
 use std::fmt;
 use std::convert::TryInto;
 
+use super::{Generic, Serialize};
+
 pub struct RTDFDeserializer {
     pub stream: TDFTokenStream,
 }
@@ -320,6 +322,30 @@ impl Deserialize for Union {
                 des.stream.push(TDFToken::UnionEnd);
             },
             _ => bail!("Union Unsupported yet!"),
+        }
+
+        Ok(())
+    }
+}
+
+impl<T: Deserialize + Serialize> Deserialize for Generic<T> {
+
+    const TYPE: TDFToken = TDFToken::GenericType;
+
+    fn deserialize(&mut self, des: &mut RTDFDeserializer) -> Result<()> {
+
+        match self.0.as_mut() {
+            None => {
+                des.stream.push(TDFToken::GenericStart(false));
+                des.stream.push(TDFToken::GenericEnd);
+            },
+            Some((label, inner)) => {
+                des.stream.push(TDFToken::GenericStart(true));
+                des.stream.push(TDFToken::Label(label.clone()));
+                des.des_type::<T>()?;
+                inner.deserialize(des)?;
+                des.stream.push(TDFToken::GenericEnd);
+            }
         }
 
         Ok(())

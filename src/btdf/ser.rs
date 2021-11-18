@@ -31,6 +31,7 @@ impl BTDFSerializer {
             TDFToken::ObjectTypeType => self.ser_object_type(writer),
             TDFToken::ObjectIdType   => self.ser_object_id(writer),
             TDFToken::FloatType      => self.ser_float(writer),
+            TDFToken::GenericType    => self.ser_generic(writer),
             _ => bail!("Trying to parse type token, but found {:?}", token_type)
         }
     }
@@ -185,6 +186,51 @@ impl BTDFSerializer {
         if end_token != TDFToken::UnionEnd {
             bail!("Expected End of Union, found {:?}", end_token)
         }
+
+        Ok(())
+    }
+
+    pub fn ser_generic(&mut self, writer: &mut dyn Write) -> Result<()> {
+
+        let token = self.stream.next()?;
+        let exist = match token {
+            TDFToken::GenericStart(t) => t,
+            _ => bail!("Expected Generic start, found {:?}", token),
+        };
+        
+
+        writer.write_u8(if exist {1} else {0})?;
+
+        if !exist {
+
+            let end_token = self.stream.next()?;
+            if end_token != TDFToken::GenericEnd {
+                bail!("Expected End of Generic, found {:?}", end_token)
+            }
+
+            return Ok(());
+
+        }
+
+        let generic_label = self.stream.next()?;
+
+        match generic_label {
+            TDFToken::Label(label_string) => self.write_label(writer, &label_string)?,
+            _ => bail!("Expected Label in Generic, found {:?}", generic_label),
+        }
+        
+        let value = self.stream.next()?;
+        writer.write_u8(value.get_tag()?)?;
+
+        self.ser_token(writer, value, false)?;
+
+        let end_token = self.stream.next()?;
+        if end_token != TDFToken::GenericEnd {
+            bail!("Expected End of Generic, found {:?}", end_token)
+        }
+        
+        // Terminator, but only if not empty
+        writer.write_u8(0)?;
 
         Ok(())
     }

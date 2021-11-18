@@ -5,6 +5,8 @@ use crate::rtdf::{ObjectId, ObjectType, IntList, Union, IpAddress, Localization}
 use anyhow::{Result, bail};
 use std::collections::HashMap;
 use std::fmt;
+use super::des::Deserialize;
+use super::Generic;
 
 #[derive(Debug)]
 pub enum RTDFSerError {
@@ -429,6 +431,41 @@ impl Serialize for Vec<u8> {
                 bail!("Expected Blob, found {:?}", value);
             }
         }
+    }
+}
+
+impl<T: Deserialize + Serialize> Serialize for Generic<T> {
+
+    fn serialize(ser: &mut RTDFSerializer) -> Result<Self> {
+        let value = ser.stream.next()?;
+        let is_valid = match value {
+            TDFToken::GenericStart(t) => t,
+            _ => bail!("Expected Generic, found {:?}", value),
+        };
+
+        let this = if is_valid {
+            let label = ser.stream.next()?;
+            let label_string = match label {
+                TDFToken::Label(label_string) => {label_string},
+                _ => {
+                    bail!("Unable to serialize union, expected Label, found {:?}", label);
+                }
+            };
+
+            let value_type = ser.stream.next()?;
+            let expected_type = match T::serialize( ser) {
+                Ok(t) => t,
+                Err(e) => bail!("Error serializing field ({}, {:?}): {}", label_string, value_type, e),
+            };
+            
+            Self(Some((label_string, expected_type)))
+        } else {
+            Self(None)
+        };
+
+        ser.check_token(TDFToken::GenericEnd)?;
+
+        Ok(this)
     }
 }
 
