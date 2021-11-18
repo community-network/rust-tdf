@@ -169,6 +169,8 @@ impl BTDFDeserializer {
 
         let size = self.read_number(reader)?;
 
+        log::trace!("String size = {}", size);
+        
         /*
             In some situation len might me 0
             In that case (0-1) as usize will give usize::MAX
