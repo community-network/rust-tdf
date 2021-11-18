@@ -360,7 +360,7 @@ impl BTDFDeserializer {
 
             // That means we need to decode id into string
             // For now skip this
-            if tdf_id > 0x0f {
+            if tdf_id > 0x2 {
                 let mut b = reader.read_u8()?;
                 while b != 0 {
                     b = reader.read_u8()?;
