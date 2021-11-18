@@ -230,7 +230,7 @@ mod tests {
             map: Generic<u32>,
         }
 
-        test_bi_direct(Test { map: Generic(Some(("MAP ".into(), 67, 34))) }).unwrap();
+        test_bi_direct(Test { map: Generic(Some(("MAP ".into(), 0xf, 34))) }).unwrap();
     }
 
     #[test]

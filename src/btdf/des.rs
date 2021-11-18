@@ -354,11 +354,25 @@ impl BTDFDeserializer {
 
         let generic_exists = reader.read_u8()? != 0;
 
-        self.stream.push(TDFToken::GenericStart(generic_exists));
-
         if generic_exists {
 
-            self.des_int(reader)?;
+            let tdf_id = self.read_number(reader)?;
+
+            // That means we need to decode id into string
+            // For now skip this
+            if tdf_id > 0x0f {
+                let mut b = reader.read_u8()?;
+                while b != 0 {
+                    b = reader.read_u8()?;
+                }
+                self.stream.push(TDFToken::GenericStart(false));
+                self.stream.push(TDFToken::GenericEnd);
+                return Ok(());
+            }
+
+            self.stream.push(TDFToken::GenericStart(true));
+            self.stream.push(TDFToken::Int(tdf_id));
+
             self.des_label(reader)?;
             
             let type_tag = reader.read_u8()?;
@@ -372,6 +386,9 @@ impl BTDFDeserializer {
             if null != 0 {
                 log::trace!("Generic terminator is not null!!1 Found [{}].", {null});
             }
+
+        } else {
+            self.stream.push(TDFToken::GenericStart(false));
         }
         
         self.stream.push(TDFToken::GenericEnd);
