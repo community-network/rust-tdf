@@ -170,7 +170,7 @@ impl BTDFDeserializer {
         let size = self.read_number(reader)?;
 
         log::trace!("String size = {}", size);
-        
+
         /*
             In some situation len might me 0
             In that case (0-1) as usize will give usize::MAX
@@ -185,6 +185,7 @@ impl BTDFDeserializer {
             It appears that in new versions -1 is allowed
             That means String can be as long as it is possible
             Read till we hit terminator than
+            This is generally slower
         */
         if size < 0 {
             let mut res = vec![];
@@ -193,6 +194,8 @@ impl BTDFDeserializer {
                 res.push(b);
                 b = reader.read_u8()?;
             }
+            self.stream.push(TDFToken::String(res));
+            return Ok(());
         }
 
         let mut res = vec![0; (size - 1) as usize];
