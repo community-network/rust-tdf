@@ -314,6 +314,7 @@ impl BTDFDeserializer {
 
         if generic_exists {
 
+            self.des_int(reader)?;
             self.des_label(reader)?;
             
             let type_tag = reader.read_u8()?;

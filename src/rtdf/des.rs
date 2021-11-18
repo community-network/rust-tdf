@@ -339,8 +339,9 @@ impl<T: Deserialize + Serialize> Deserialize for Generic<T> {
                 des.stream.push(TDFToken::GenericStart(false));
                 des.stream.push(TDFToken::GenericEnd);
             },
-            Some((label, inner)) => {
+            Some((label, tdf_id, inner)) => {
                 des.stream.push(TDFToken::GenericStart(true));
+                des.stream.push(TDFToken::Int(*tdf_id));
                 des.stream.push(TDFToken::Label(label.clone()));
                 des.des_type::<T>()?;
                 inner.deserialize(des)?;

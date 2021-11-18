@@ -235,6 +235,6 @@ mod tests {
         test_case.insert(1, "seven".to_string());
         test_case.insert(2, "five".to_string());
 
-        test_bi_direct(Test { map: Generic(Some(("MAP ".into(), 34))) }).unwrap();
+        test_bi_direct(Test { map: Generic(Some(("MAP ".into(), 67, 34))) }).unwrap();
     }
 }

@@ -444,6 +444,15 @@ impl<T: Deserialize + Serialize> Serialize for Generic<T> {
         };
 
         let this = if is_valid {
+            
+            let id = ser.stream.next()?;
+            let tdf_id = match id {
+                TDFToken::Int(tdf_id) => {tdf_id},
+                _ => {
+                    bail!("Unable to serialize union, expected Label, found {:?}", id);
+                }
+            };
+
             let label = ser.stream.next()?;
             let label_string = match label {
                 TDFToken::Label(label_string) => {label_string},
@@ -458,7 +467,7 @@ impl<T: Deserialize + Serialize> Serialize for Generic<T> {
                 Err(e) => bail!("Error serializing field ({}, {:?}): {}", label_string, value_type, e),
             };
             
-            Self(Some((label_string, expected_type)))
+            Self(Some((label_string, tdf_id, expected_type)))
         } else {
             Self(None)
         };

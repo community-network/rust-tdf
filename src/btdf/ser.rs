@@ -212,6 +212,13 @@ impl BTDFSerializer {
 
         }
 
+        let tdf_id = self.stream.next()?;
+
+        match tdf_id {
+            TDFToken::Int(id) => self.write_number(writer, id)?,
+            _ => bail!("Expected TDFID in Generic, found {:?}", tdf_id),
+        }
+
         let generic_label = self.stream.next()?;
 
         match generic_label {
@@ -228,7 +235,7 @@ impl BTDFSerializer {
         if end_token != TDFToken::GenericEnd {
             bail!("Expected End of Generic, found {:?}", end_token)
         }
-        
+
         // Terminator, but only if not empty
         writer.write_u8(0)?;
 

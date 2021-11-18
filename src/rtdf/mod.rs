@@ -66,4 +66,4 @@ pub struct IpAddress {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Generic<T: Deserialize + Serialize>(pub Option<(String, T)>);
+pub struct Generic<T: Deserialize + Serialize>(pub Option<(String, i64, T)>);
