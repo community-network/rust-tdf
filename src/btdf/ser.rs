@@ -223,6 +223,10 @@ impl BTDFSerializer {
 
         match generic_label {
             TDFToken::Label(label_string) => self.write_label(writer, &label_string)?,
+            TDFToken::GenericEnd => {
+                writer.write_u8(0)?;
+                return Ok(());
+            }
             _ => bail!("Expected Label in Generic, found {:?}", generic_label),
         }
         

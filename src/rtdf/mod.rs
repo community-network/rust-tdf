@@ -65,5 +65,29 @@ pub struct IpAddress {
     pub port: u64,
 }
 
+
+// pub struct Generic<T: Deserialize + Serialize>(pub Option<(String, i64, T)>);
+
+
+
+pub type GenericTdfId = i64;
+pub type Label = String;
+
+
 #[derive(Debug, PartialEq, Clone)]
-pub struct Generic<T: Deserialize + Serialize>(pub Option<(String, i64, T)>);
+pub enum Generic {
+    Valid(GenericTdfId, GenericContent),
+    Invalid
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum GenericContent {
+    Labeled(Label, GenericType),
+    Empty,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum GenericType {
+    Int(i64),
+    String(String)
+}

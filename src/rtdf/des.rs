@@ -1,13 +1,12 @@
 
 use crate::token::*;
-use crate::rtdf::{ObjectId, ObjectType, IntList, Union, IpAddress, Localization};
+use crate::rtdf::{GenericContent, GenericType, ObjectId, ObjectType, IntList, Union, IpAddress, Localization, Generic, Serialize};
 
 use anyhow::{Result, bail};
 use std::collections::HashMap;
 use std::fmt;
 use std::convert::TryInto;
 
-use super::{Generic, Serialize};
 
 pub struct RTDFDeserializer {
     pub stream: TDFTokenStream,
@@ -328,23 +327,37 @@ impl Deserialize for Union {
     }
 }
 
-impl<T: Deserialize + Serialize> Deserialize for Generic<T> {
+impl Deserialize for Generic {
 
     const TYPE: TDFToken = TDFToken::GenericType;
 
     fn deserialize(&mut self, des: &mut RTDFDeserializer) -> Result<()> {
 
-        match self.0.as_mut() {
-            None => {
-                des.stream.push(TDFToken::GenericStart(false));
-                des.stream.push(TDFToken::GenericEnd);
-            },
-            Some((label, tdf_id, inner)) => {
+        match self {
+            Generic::Valid(tdf_id, content) => {
                 des.stream.push(TDFToken::GenericStart(true));
                 des.stream.push(TDFToken::Int(*tdf_id));
-                des.stream.push(TDFToken::Label(label.clone()));
-                des.des_type::<T>()?;
-                inner.deserialize(des)?;
+                match content {
+                    GenericContent::Labeled(label, gen_type) => {
+                        des.stream.push(TDFToken::Label(label.clone()));
+                        match gen_type {
+                            GenericType::Int(int) => {
+                                des.des_type::<i64>()?;
+                                int.deserialize(des)?;
+                            },
+                            GenericType::String(string) => {
+                                des.des_type::<String>()?;
+                                string.deserialize(des)?;
+                            },
+                        }
+                    },
+                    GenericContent::Empty => {},
+                }
+                
+                des.stream.push(TDFToken::GenericEnd);
+            },
+            Generic::Invalid => {
+                des.stream.push(TDFToken::GenericStart(false));
                 des.stream.push(TDFToken::GenericEnd);
             }
         }

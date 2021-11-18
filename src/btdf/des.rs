@@ -356,20 +356,17 @@ impl BTDFDeserializer {
 
         if generic_exists {
 
+            self.stream.push(TDFToken::GenericStart(true));
             let tdf_id = self.read_number(reader)?;
+            self.stream.push(TDFToken::Int(tdf_id));
 
-            // That means we need to decode id into string
-            // But Id is mapped into nothing and generic terminated
+            // Id is mapped into nothing and generic terminated
             // So we skip?
-            if tdf_id > 0x20 && reader.peek().read_u8()? == 0 {
+            if reader.peek().read_u8()? == 0 {
                 reader.read_u8()?;
-                self.stream.push(TDFToken::GenericStart(false));
                 self.stream.push(TDFToken::GenericEnd);
                 return Ok(());
             }
-
-            self.stream.push(TDFToken::GenericStart(true));
-            self.stream.push(TDFToken::Int(tdf_id));
 
             self.des_label(reader)?;
             

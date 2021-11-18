@@ -14,7 +14,7 @@ pub mod prelude {
     pub use macro_tdf::*;
 
     // Ser/des rust tdf
-    pub use crate::rtdf::{RTDFDeserializer, RTDFSerializer, Deserialize, Serialize, StructConstructor, ObjectType, ObjectId, IntList, Union, Localization, IpAddress};
+    pub use crate::rtdf::{Generic, GenericContent, GenericType, RTDFDeserializer, RTDFSerializer, Deserialize, Serialize, StructConstructor, ObjectType, ObjectId, IntList, Union, Localization, IpAddress};
 
     // Ser/des defenitions
     pub use crate::token::{TDFSerializer, TDFDeserializer, TDFTokenStream, TDFToken};
@@ -68,7 +68,6 @@ mod tests {
 
     use peekread::{SeekPeekReader};
     use crate::prelude::*;
-    use crate::rtdf::Generic;
     use crate::{struct_to_bin, bin_to_struct};
     use std::collections::HashMap;
     use std::io::Cursor;
@@ -223,14 +222,27 @@ mod tests {
 
     
     #[test]
-    fn generic_test() {
+    fn generic_test() -> Result<()> {
+
+        
+        // use simple_logger::SimpleLogger;
+        // SimpleLogger::new().init().unwrap();
+    
+        // // Use Info, Debug, Trace to see more
+        // log::set_max_level(log::LevelFilter::Trace);
 
         #[derive(Pack, Debug, PartialEq)]
         struct Test {
-            map: Generic<u32>,
+            alph: Generic,
+            beta: Generic,
+            gama: Generic,
         }
 
-        test_bi_direct(Test { map: Generic(Some(("MAP ".into(), 0xf, 34))) }).unwrap();
+        test_bi_direct(Test { 
+            alph: Generic::Valid(0x06, GenericContent::Empty),
+            beta: Generic::Invalid,
+            gama: Generic::Valid(0x05, GenericContent::Labeled("GAMA".into(), GenericType::Int(34))),
+        })
     }
 
     #[test]

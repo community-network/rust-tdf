@@ -1,6 +1,6 @@
 
 use crate::token::*;
-use crate::rtdf::{ObjectId, ObjectType, IntList, Union, IpAddress, Localization};
+use crate::rtdf::{GenericContent, GenericType, IntList, IpAddress, Localization, ObjectId, ObjectType, Union};
 
 use anyhow::{Result, bail};
 use std::collections::HashMap;
@@ -434,7 +434,7 @@ impl Serialize for Vec<u8> {
     }
 }
 
-impl<T: Deserialize + Serialize> Serialize for Generic<T> {
+impl Serialize for Generic {
 
     fn serialize(ser: &mut RTDFSerializer) -> Result<Self> {
         let value = ser.stream.next()?;
@@ -444,35 +444,43 @@ impl<T: Deserialize + Serialize> Serialize for Generic<T> {
         };
 
         let this = if is_valid {
-            
+
             let id = ser.stream.next()?;
             let tdf_id = match id {
                 TDFToken::Int(tdf_id) => {tdf_id},
                 _ => {
-                    bail!("Unable to serialize union, expected Label, found {:?}", id);
+                    bail!("Unable to serialize Generic, expected Int (tdf id), found {:?}", id);
                 }
             };
 
             let label = ser.stream.next()?;
-            let label_string = match label {
-                TDFToken::Label(label_string) => {label_string},
+            
+            let content = match label {
+                TDFToken::Label(label_string) => {
+
+                    let value_type = ser.stream.next()?;
+
+                    let inner = match value_type {
+                        TDFToken::IntType => GenericType::Int(i64::serialize(ser)?),
+                        TDFToken::StringType => GenericType::String(String::serialize(ser)?),
+                        _ => bail!("Unexpected Generic type {:?}!", value_type)
+                    };
+                    ser.check_token(TDFToken::GenericEnd)?;
+                    GenericContent::Labeled(label_string, inner)
+                },
+                TDFToken::GenericEnd => {
+                    GenericContent::Empty
+                },
                 _ => {
-                    bail!("Unable to serialize union, expected Label, found {:?}", label);
+                    bail!("Unable to serialize generic, expected Label, found {:?}", label);
                 }
             };
 
-            let value_type = ser.stream.next()?;
-            let expected_type = match T::serialize( ser) {
-                Ok(t) => t,
-                Err(e) => bail!("Error serializing field ({}, {:?}): {}", label_string, value_type, e),
-            };
-            
-            Self(Some((label_string, tdf_id, expected_type)))
+            Self::Valid(tdf_id, content)
         } else {
-            Self(None)
+            ser.check_token(TDFToken::GenericEnd)?;
+            Self::Invalid
         };
-
-        ser.check_token(TDFToken::GenericEnd)?;
 
         Ok(this)
     }
