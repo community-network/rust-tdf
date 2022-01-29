@@ -2,6 +2,7 @@
 pub mod token;
 pub mod btdf;
 pub mod rtdf;
+// pub mod json;
 //pub mod auto;
 
 extern crate macro_tdf;
@@ -257,8 +258,12 @@ mod tests {
         #[derive(Pack, Debug, PartialEq)]
         struct Test {
             gbra: Vec<(u32, Vec<(u32, String)>)>,
+            msid: Vec<(u32, Vec<(u32, String)>)>,
         }
 
-        test_bi_direct(Test { gbra: vec![(1, vec![(2, "test".into())])] }).unwrap();
+        test_bi_direct(Test { 
+            gbra: vec![(1, vec![(2, "test".into())])],
+            msid: vec![(1, vec![(2, "test".into())])],
+        }).unwrap();
     }
 }

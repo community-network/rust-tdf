@@ -83,7 +83,7 @@ impl BTDFDeserializer {
 
         let tag_bytes = Vec::from(label_tag_bytes);
 
-        if vec![0x9E, 0x2C, 0xA1] == tag_bytes {
+        if vec![0x9E, 0x2C, 0xA1] == tag_bytes || vec![183, 58, 100] == tag_bytes {
             has_heat1_bug = true;
         }
 
