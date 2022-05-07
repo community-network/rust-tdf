@@ -261,13 +261,11 @@ impl BTDFDeserializer {
         let value_tag = reader.read_u8()?;
         let mut tdf_value = TDFToken::from_tag(value_tag)?;
 
-        let field_type = self.stream.last().unwrap();
+        let field_type = self.stream.get(self.stream.len() - 2)?;
         
-        if field_type == &TDFToken::Label("GBRA".into()) || field_type == &TDFToken::Label("MSID".into()) {
-            log::trace!("Bugged PairList");
+        if field_type == TDFToken::Label("GBRA".into()) || field_type == TDFToken::Label("MSID".into()) {
             tdf_value = TDFToken::PairListType;
-        } else if field_type == &TDFToken::Label("PELM".into()) {
-            log::trace!("Bugged List");
+        } else if field_type == TDFToken::Label("PELM".into()) {
             tdf_value = TDFToken::ListType;
         }
 

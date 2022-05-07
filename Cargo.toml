@@ -14,4 +14,4 @@ num-traits = "0.2.14"
 macro-tdf = { path = "macro-tdf" }
 log = "*"
 peekread = "0.1"
-# simple_logger = "*"
+simple_logger = "*"

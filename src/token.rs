@@ -36,6 +36,9 @@ impl TDFTokenStream {
     pub fn last(&self) -> Option<&TDFToken> {
         self.0.last()
     }
+    pub fn len(&self) -> usize {
+        return self.0.len()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

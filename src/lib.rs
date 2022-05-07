@@ -226,11 +226,11 @@ mod tests {
     fn generic_test() -> Result<()> {
 
         
-        // use simple_logger::SimpleLogger;
-        // SimpleLogger::new().init().unwrap();
+        use simple_logger::SimpleLogger;
+        SimpleLogger::new().init().unwrap();
     
-        // // Use Info, Debug, Trace to see more
-        // log::set_max_level(log::LevelFilter::Trace);
+        // Use Info, Debug, Trace to see more
+        log::set_max_level(log::LevelFilter::Trace);
 
         #[derive(Pack, Debug, PartialEq)]
         struct Test {
@@ -259,11 +259,13 @@ mod tests {
         struct Test {
             gbra: Vec<(u32, Vec<(u32, String)>)>,
             msid: Vec<(u32, Vec<(u32, String)>)>,
+            pelm: Vec<(String, Vec<String>)>,
         }
 
         test_bi_direct(Test { 
             gbra: vec![(1, vec![(2, "test".into())])],
             msid: vec![(1, vec![(2, "test".into())])],
+            pelm: vec![("a".into(), vec!["test".into()])],
         }).unwrap();
     }
 }
