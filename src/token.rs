@@ -33,6 +33,9 @@ impl TDFTokenStream {
     pub fn push(&mut self, token: TDFToken) {
         self.0.push(token);
     }
+    pub fn last(&self) -> Option<&TDFToken> {
+        self.0.last()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

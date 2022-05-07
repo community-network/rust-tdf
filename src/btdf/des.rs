@@ -34,7 +34,7 @@ impl BTDFDeserializer {
             TDFToken::BlobType       => self.des_blob(reader),
             TDFToken::MapType        => self.des_map(reader, is_root),
             TDFToken::ListType       => self.des_list(reader),
-            TDFToken::PairListType   => self.des_pair_list(reader, false),
+            TDFToken::PairListType   => self.des_pair_list(reader),
             TDFToken::UnionType      => self.des_union(reader),
             TDFToken::IntListType    => self.des_int_list(reader),
             TDFToken::ObjectTypeType => self.des_object_type(reader),
@@ -46,28 +46,6 @@ impl BTDFDeserializer {
 
         result
 
-    }
-
-    fn des_bugged_token(&mut self, reader: &mut impl PeekRead, tdf_type: TDFToken, is_root: bool) -> Result<()> {
-        log::trace!("Bugged Token: {:?}", tdf_type);
-
-        let result = match tdf_type {
-            TDFToken::IntType        => self.des_int(reader),
-            TDFToken::StringType     => self.des_string(reader),
-            TDFToken::BlobType       => self.des_blob(reader),
-            TDFToken::MapType        => self.des_map(reader, is_root),
-            TDFToken::ListType       => self.des_list(reader),
-            TDFToken::PairListType   => self.des_pair_list(reader, true),
-            TDFToken::UnionType      => self.des_union(reader),
-            TDFToken::IntListType    => self.des_int_list(reader),
-            TDFToken::ObjectTypeType => self.des_object_type(reader),
-            TDFToken::ObjectIdType   => self.des_object_id(reader),
-            TDFToken::FloatType      => self.des_float(reader),
-            TDFToken::GenericType    => self.des_generic(reader),
-            _ => bail!("Expected token, found {:?}!", tdf_type)
-        };
-
-        result
     }
 
     pub fn des_label(&mut self, reader: &mut impl PeekRead) -> Result<bool> {
@@ -159,11 +137,7 @@ impl BTDFDeserializer {
 
             self.stream.push(tdf_type.clone());
 
-            if has_bug {
-                self.des_bugged_token(reader, tdf_type, false)?;
-            } else {
-                self.des_token(reader, tdf_type, false)?;
-            }
+            self.des_token(reader, tdf_type, false)?;
         }
 
     }
@@ -279,7 +253,7 @@ impl BTDFDeserializer {
         Ok(())
     }
 
-    pub fn des_pair_list(&mut self, reader: &mut impl PeekRead, has_bug: bool) -> Result<()> {
+    pub fn des_pair_list(&mut self, reader: &mut impl PeekRead) -> Result<()> {
 
         let key_tag = reader.read_u8()?;
         let tdf_key = TDFToken::from_tag(key_tag)?;
@@ -287,9 +261,14 @@ impl BTDFDeserializer {
         let value_tag = reader.read_u8()?;
         let mut tdf_value = TDFToken::from_tag(value_tag)?;
 
-        if has_bug {
-            log::trace!("Bugged got: {:?}", tdf_value);
+        let field_type = self.stream.last().unwrap();
+        
+        if field_type == &TDFToken::Label("GBRA".into()) || field_type == &TDFToken::Label("MSID".into()) {
+            log::trace!("Bugged PairList");
             tdf_value = TDFToken::PairListType;
+        } else if field_type == &TDFToken::Label("PELM".into()) {
+            log::trace!("Bugged List");
+            tdf_value = TDFToken::ListType;
         }
 
         let size = self.read_number(reader)? as usize;

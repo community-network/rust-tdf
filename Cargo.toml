@@ -13,5 +13,5 @@ num-derive = "0.3.3"
 num-traits = "0.2.14"
 macro-tdf = { path = "macro-tdf" }
 log = "*"
-peekread = "*"
+peekread = "0.1"
 # simple_logger = "*"
