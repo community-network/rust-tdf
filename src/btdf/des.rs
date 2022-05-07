@@ -288,6 +288,7 @@ impl BTDFDeserializer {
         let mut tdf_value = TDFToken::from_tag(value_tag)?;
 
         if has_bug {
+            log::trace!("Bugged got: {:?}", tdf_value);
             tdf_value = TDFToken::PairListType;
         }
 
