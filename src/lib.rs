@@ -2,7 +2,7 @@
 pub mod token;
 pub mod btdf;
 pub mod rtdf;
-// pub mod json;
+pub mod json;
 //pub mod auto;
 
 extern crate macro_tdf;
@@ -27,6 +27,7 @@ pub mod prelude {
 
 
 use btdf::{BTDFDeserializer, BTDFSerializer};
+use json::JsonSerializer;
 use rtdf::{Deserialize, RTDFSerializer, Serialize, StructConstructor, RTDFDeserializer};
 use token::{TDFSerializer, TDFDeserializer};
 use anyhow::Result;
@@ -52,6 +53,16 @@ pub fn struct_to_bin<D: Deserialize, W: Write>(structure: &mut D, writer: &mut W
     Ok(())
 }
 
+/// Performs TDF binary to json strcut conversion
+pub fn bin_to_json< R: Read + Seek+ Sized>(reader: &mut R) -> Result<String>  {
+    // Conver bin into token stream
+    let stream = BTDFDeserializer::deserialize(reader)?;
+    let mut sc = String::new();
+    // Ser given struct
+    JsonSerializer::serialize(stream, &mut sc)?;
+    Ok(sc)
+}
+
 // /// Auto generates Rust pseudo code for given binary stream
 // pub fn auto_gen_from_bin<R: Read + Seek+ Sized>(reader: &mut R) -> Result<String>  {
 //     // Conver bin into token stream
@@ -68,7 +79,7 @@ pub fn struct_to_bin<D: Deserialize, W: Write>(structure: &mut D, writer: &mut W
 mod tests {
 
     use peekread::{SeekPeekReader};
-    use crate::prelude::*;
+    use crate::{prelude::*, bin_to_json};
     use crate::{struct_to_bin, bin_to_struct};
     use std::collections::HashMap;
     use std::io::Cursor;
@@ -129,6 +140,17 @@ mod tests {
         rw_cursor.set_position(0);
         let tested_struct = bin_to_struct::<T, SeekPeekReader<Cursor<Vec<u8>>>>(&mut SeekPeekReader::new(rw_cursor))?;
         assert_eq!(tested_struct, input);
+        Ok(())
+    }
+
+
+    pub fn test_json<T: Deserialize + Serialize + PartialEq + Debug>(mut input: T) -> Result<()> {
+        let test_vector: Vec<u8> = vec![];
+        let mut rw_cursor = Cursor::new(test_vector);
+        struct_to_bin(&mut input, &mut rw_cursor)?;
+        rw_cursor.set_position(0);
+        let json_string = bin_to_json::<SeekPeekReader<Cursor<Vec<u8>>>>(&mut SeekPeekReader::new(rw_cursor))?;
+        //println!("{}", json_string);
         Ok(())
     }
 
@@ -268,4 +290,38 @@ mod tests {
             pelm: vec![("a".into(), vec!["test".into()])],
         }).unwrap();
     }
+
+
+    #[test]
+    fn array_test_json() {
+
+        #[derive(Pack, Debug, PartialEq)]
+        struct TestCustomJson {
+            a: String,
+            b: Vec<u8>,
+            c: Vec<i32>,
+            d: IntList,
+            e: Localization,
+            f: ObjectType,
+            g: ObjectId,
+        }
+
+        impl TestCustomJson {
+            pub fn new() -> Self {
+                Self {
+                    a: "test-frostbite string".into(),
+                    b: vec![0xf, 0xf, 0xc],
+                    c: vec![12, 34325, 0],
+                    d: IntList(vec![675, 5, 6, -1]),
+                    e: Localization("enUS".to_string()),
+                    f: ObjectType(34, 56),
+                    g: ObjectId(1, 2, 3),
+                }
+            }
+        }
+
+        test_json(TestCustomJson::new()).unwrap();
+    }
+
+
 }
