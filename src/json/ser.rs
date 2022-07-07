@@ -77,9 +77,10 @@ impl JsonSerializer {
             if label == TDFToken::MapEnd {
                 if iter != 0 {
                     output.push_str("\n");
-                }
-                for _ in 0..level {
-                    output.push_str("\t");
+                } else {
+                    for _ in 0..level {
+                        output.push_str("\t");
+                    }
                 }
                 output.push_str("}");
                 return Ok(output);
@@ -158,9 +159,9 @@ impl JsonSerializer {
         output.push_str("[");
         for i in 0..size {
             output.push_str("[");
-            self.ser_token( k_type.clone(), level)?;
+            output.push_str(&self.ser_token( k_type.clone(), level)?);
             output.push_str(",");
-            self.ser_token( v_type.clone(), level)?;
+            output.push_str(&self.ser_token( v_type.clone(), level)?);
             output.push_str("]");
             if i != size-1 {
                 output.push_str(",\n");
