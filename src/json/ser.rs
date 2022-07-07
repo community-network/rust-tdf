@@ -17,20 +17,20 @@ impl JsonSerializer {
         }
     }
 
-    pub fn ser_token(&mut self, token_type: TDFToken, is_root: bool) -> Result<String> {
+    pub fn ser_token(&mut self, token_type: TDFToken, level: u32) -> Result<String> {
         return match token_type {
             TDFToken::IntType        => self.ser_int(),
             TDFToken::StringType     => self.ser_string(),
             TDFToken::BlobType       => self.ser_blob(),
-            TDFToken::MapType        => self.ser_map(is_root),
-            TDFToken::ListType       => self.ser_list(),
-            TDFToken::PairListType   => self.ser_pair_list(),
-            TDFToken::UnionType      => self.ser_union(),
+            TDFToken::MapType        => self.ser_map(level),
+            TDFToken::ListType       => self.ser_list(level),
+            TDFToken::PairListType   => self.ser_pair_list(level),
+            TDFToken::UnionType      => self.ser_union(level),
             TDFToken::IntListType    => self.ser_int_list(),
             TDFToken::ObjectTypeType => self.ser_object_type(),
             TDFToken::ObjectIdType   => self.ser_object_id(),
             TDFToken::FloatType      => self.ser_float(),
-            TDFToken::GenericType    => self.ser_generic(),
+            TDFToken::GenericType    => self.ser_generic(level),
             _ => bail!("Trying to parse type token, but found {:?}", token_type)
         }
     }
@@ -59,7 +59,7 @@ impl JsonSerializer {
         }
     }
 
-    pub fn ser_map(&mut self, is_root: bool) -> Result<String> {
+    pub fn ser_map(&mut self, level: u32) -> Result<String> {
 
         let token = self.stream.next()?;
         if token != TDFToken::MapStart {
@@ -75,6 +75,12 @@ impl JsonSerializer {
             let mut label = self.stream.next()?;
 
             if label == TDFToken::MapEnd {
+                if iter != 0 {
+                    output.push_str("\n");
+                }
+                for _ in 0..level {
+                    output.push_str("\t");
+                }
                 output.push_str("}");
                 return Ok(output);
             } else if label == TDFToken::MapUnion {
@@ -83,6 +89,12 @@ impl JsonSerializer {
 
             if iter != 0 {
                 output.push_str(",\n");
+            } else {
+                output.push_str("\n");
+            }
+
+            for _ in 0..level+1 {
+                output.push_str("\t");
             }
 
             match label {
@@ -94,14 +106,14 @@ impl JsonSerializer {
             output.push_str(": ");
             
             let value = self.stream.next()?;
-            output.push_str(&self.ser_token(value, false)?);
+            output.push_str(&self.ser_token(value, level+1)?);
 
             iter += 1;
         }
 
     }
 
-    pub fn ser_list(&mut self) -> Result<String> {
+    pub fn ser_list(&mut self, level: u32) -> Result<String> {
 
         let token = self.stream.next()?;
         let size = match token {
@@ -115,7 +127,7 @@ impl JsonSerializer {
 
         output.push_str("[");
         for i in 0..size {
-            output.push_str(&self.ser_token( inner_type.clone(), false)?);
+            output.push_str(&self.ser_token( inner_type.clone(), level)?);
             if i != size-1 {
                 output.push_str(",");
             }
@@ -130,7 +142,7 @@ impl JsonSerializer {
         Ok(output)
     }
 
-    pub fn ser_pair_list(&mut self) -> Result<String> {
+    pub fn ser_pair_list(&mut self, level: u32) -> Result<String> {
 
         let token = self.stream.next()?;
         let size = match token {
@@ -146,9 +158,9 @@ impl JsonSerializer {
         output.push_str("[");
         for i in 0..size {
             output.push_str("[");
-            self.ser_token( k_type.clone(), false)?;
+            self.ser_token( k_type.clone(), level)?;
             output.push_str(",");
-            self.ser_token( v_type.clone(), false)?;
+            self.ser_token( v_type.clone(), level)?;
             output.push_str("]");
             if i != size-1 {
                 output.push_str(",\n");
@@ -164,7 +176,7 @@ impl JsonSerializer {
         Ok(output)
     }
 
-    pub fn ser_union(&mut self) -> Result<String> {
+    pub fn ser_union(&mut self, level: u32) -> Result<String> {
 
         let token = self.stream.next()?;
         let union_type = match token {
@@ -202,7 +214,7 @@ impl JsonSerializer {
         output.push_str(",\n\"tag\": ");
         output.push_str(&format!("{}", value.get_tag()?));
         output.push_str(",\n\"valie\": ");
-        output.push_str(&self.ser_token(value, false)?);
+        output.push_str(&self.ser_token(value, level)?);
         output.push_str("}");
         
 
@@ -214,7 +226,7 @@ impl JsonSerializer {
         Ok(output)
     }
 
-    pub fn ser_generic(&mut self) -> Result<String> {
+    pub fn ser_generic(&mut self, level: u32) -> Result<String> {
 
         let token = self.stream.next()?;
         let exist = match token {
@@ -265,7 +277,7 @@ impl JsonSerializer {
         output.push_str("{\n");
         output.push_str(&format!("\"tag\": {},\n", value.get_tag()?));
         output.push_str(&format!("\"value\": "));
-        output.push_str(&self.ser_token(value, false)?);
+        output.push_str(&self.ser_token(value, level)?);
         output.push_str("}");
 
         let end_token = self.stream.next()?;
@@ -366,7 +378,7 @@ impl TDFSerializer<String> for JsonSerializer {
             stream
         };
         let token = des.stream.next()?;
-        let str_res = des.ser_token(token, true)?;
+        let str_res = des.ser_token(token, 0)?;
         writer.insert_str(writer.len(), &str_res);
         Ok(())
     }

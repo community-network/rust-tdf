@@ -150,7 +150,7 @@ mod tests {
         struct_to_bin(&mut input, &mut rw_cursor)?;
         rw_cursor.set_position(0);
         let json_string = bin_to_json::<SeekPeekReader<Cursor<Vec<u8>>>>(&mut SeekPeekReader::new(rw_cursor))?;
-        //println!("{}", json_string);
+        println!("{}", json_string);
         Ok(())
     }
 
@@ -304,6 +304,7 @@ mod tests {
             e: Localization,
             f: ObjectType,
             g: ObjectId,
+            t: TestBasic,
         }
 
         impl TestCustomJson {
@@ -316,6 +317,7 @@ mod tests {
                     e: Localization("enUS".to_string()),
                     f: ObjectType(34, 56),
                     g: ObjectId(1, 2, 3),
+                    t: TestBasic::new(),
                 }
             }
         }
