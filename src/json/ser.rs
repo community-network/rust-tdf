@@ -77,7 +77,6 @@ impl JsonSerializer {
             if label == TDFToken::MapEnd {
                 if iter != 0 {
                     output.push_str("\n");
-                } else {
                     for _ in 0..level {
                         output.push_str("\t");
                     }
@@ -130,7 +129,7 @@ impl JsonSerializer {
         for i in 0..size {
             output.push_str(&self.ser_token( inner_type.clone(), level)?);
             if i != size-1 {
-                output.push_str(",");
+                output.push_str(", ");
             }
         }
         output.push_str("]");
@@ -160,7 +159,7 @@ impl JsonSerializer {
         for i in 0..size {
             output.push_str("[");
             output.push_str(&self.ser_token( k_type.clone(), level)?);
-            output.push_str(",");
+            output.push_str(", ");
             output.push_str(&self.ser_token( v_type.clone(), level)?);
             output.push_str("]");
             if i != size-1 {
@@ -186,14 +185,25 @@ impl JsonSerializer {
         };
 
         let mut output = String::new();
-        output.push_str("{");
-        output.push_str(&format!("\"type\": \"union\",\n\"union\": {}", union_type as u8));
+        output.push_str("{\n");
+        for _ in 0..level+1 {
+            output.push_str("\t");
+        }
+        output.push_str("\"type\": \"union\",\n");
+        for _ in 0..level+1 {
+            output.push_str("\t");
+        }
+        output.push_str(&format!("\"union\": {}", union_type as u8));
 
         if union_type == UnionType::Unset {
 
             let end_token = self.stream.next()?;
             if end_token != TDFToken::UnionEnd {
                 bail!("Expected End of Union, found {:?}", end_token)
+            }
+            output.push_str("\n");
+            for _ in 0..level {
+                output.push_str("\t");
             }
             output.push_str("}");
 
@@ -206,16 +216,26 @@ impl JsonSerializer {
         match union_label {
             TDFToken::Label(label_string) => {
                 output.push_str(",\n");
+                for _ in 0..level+1 {
+                    output.push_str("\t");
+                }
+                output.push_str("\"tag\": ");
                 output.push_str(&self.write_label(&label_string)?);
             },
             _ => bail!("Expected Label in Union, found {:?}", union_label),
         }
         
         let value = self.stream.next()?;
-        output.push_str(",\n\"tag\": ");
-        output.push_str(&format!("{}", value.get_tag()?));
-        output.push_str(",\n\"valie\": ");
-        output.push_str(&self.ser_token(value, level)?);
+        output.push_str(",\n");
+        for _ in 0..level+1 {
+            output.push_str("\t");
+        }
+        output.push_str("\"value\": ");
+        output.push_str(&self.ser_token(value, level+1)?);
+        output.push_str("\n");
+        for _ in 0..level {
+            output.push_str("\t");
+        }
         output.push_str("}");
         
 
@@ -237,7 +257,8 @@ impl JsonSerializer {
         let mut output = String::new();
         
         if !exist {
-            output.push_str("{ \"type\": \"generic\"}");
+            
+            output.push_str("{\"type\": \"generic\"}");
 
             let end_token = self.stream.next()?;
             if end_token != TDFToken::GenericEnd {
@@ -249,11 +270,18 @@ impl JsonSerializer {
         }
 
         let tdf_id = self.stream.next()?;
-        output.push_str("{ \"type\": \"generic\",");
+        output.push_str("{\n");
+        for _ in 0..level+1 {
+            output.push_str("\t");
+        }
+        output.push_str("\"type\": \"generic\",\n");
 
         match tdf_id {
             TDFToken::Int(id) => {
-                output.push_str("\n\"id\": ");
+                for _ in 0..level+1 {
+                    output.push_str("\t");
+                }
+                output.push_str("\"id\": ");
                 output.push_str(&self.write_number(id)?);
             },
             _ => bail!("Expected TDFID in Generic, found {:?}", tdf_id),
@@ -264,9 +292,17 @@ impl JsonSerializer {
         match generic_label {
             TDFToken::Label(label_string) => {
                 output.push_str(",\n");
+                for _ in 0..level+1 {
+                    output.push_str("\t");
+                }
                 output.push_str(&self.write_label(&label_string)?);
+                output.push_str(": ");
             },
             TDFToken::GenericEnd => {
+                output.push_str("\n");
+                for _ in 0..level {
+                    output.push_str("\t");
+                }
                 output.push_str("}");
                 return Ok(output);
             }
@@ -276,16 +312,25 @@ impl JsonSerializer {
         let value = self.stream.next()?;
 
         output.push_str("{\n");
-        output.push_str(&format!("\"tag\": {},\n", value.get_tag()?));
+        for _ in 0..level+2 {
+            output.push_str("\t");
+        }
         output.push_str(&format!("\"value\": "));
-        output.push_str(&self.ser_token(value, level)?);
+        output.push_str(&self.ser_token(value, level+2)?);
+        output.push_str("\n");
+        for _ in 0..level+1 {
+            output.push_str("\t");
+        }
         output.push_str("}");
 
         let end_token = self.stream.next()?;
         if end_token != TDFToken::GenericEnd {
             bail!("Expected End of Generic, found {:?}", end_token)
         }
-
+        output.push_str("\n");
+        for _ in 0..level {
+            output.push_str("\t");
+        }
         output.push_str("}");
 
         Ok(output)
@@ -356,19 +401,21 @@ impl JsonSerializer {
         Ok(format!("{}", number))
     }
 
-    pub fn write_number(&self, mut number: i64) -> Result<String> {
+    pub fn write_number(&self, number: i64) -> Result<String> {
         Ok(format!("{}", number))
     }
 
     pub fn write_string(&self, string: Vec<u8>) -> Result<String> {
-        Ok(format!("\"{}\"", String::from_utf8_lossy(&string).to_string()))
+        Ok(format!("{:?}", String::from_utf8_lossy(&string).to_string()))
     }
 
     pub fn write_blob(&self, blob: Vec<u8>) -> Result<String> {
-        Ok(format!("\"Blob[{:x?}]\"", blob))
+        Ok(format!("\"Bytes{:x?}\"", blob))
     }
 
     pub fn write_label(&self, label: &String) -> Result<String> {
+        let mut label = label.to_lowercase();
+        label.retain(|c| !c.is_ascii_whitespace());
         Ok(format!("\"{}\"", label))
     }
 }

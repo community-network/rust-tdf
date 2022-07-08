@@ -305,6 +305,10 @@ mod tests {
             f: ObjectType,
             g: ObjectId,
             t: TestBasic,
+            unio: TestUnions,
+            gama: Generic,
+            alph: Generic,
+            beta: Generic,
         }
 
         impl TestCustomJson {
@@ -318,6 +322,10 @@ mod tests {
                     f: ObjectType(34, 56),
                     g: ObjectId(1, 2, 3),
                     t: TestBasic::new(),
+                    unio: TestUnions::new(),
+                    gama: Generic::Valid(0x05, GenericContent::Labeled("GAMA".into(), GenericType::Int(34))),
+                    alph: Generic::Valid(0x06, GenericContent::Empty),
+                    beta: Generic::Invalid,
                 }
             }
         }
